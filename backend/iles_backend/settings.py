@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'apps.students',
     'apps.supervisors',
     'apps.evaluations',
-    'apps.logbooks',
+    # 'apps.logbooks',
 ]
 
 MIDDLEWARE = [
