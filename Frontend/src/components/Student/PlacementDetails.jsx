@@ -77,8 +77,8 @@ const PlacementDetails = ({ placement }) => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Internship Placement</h2>
-        <p style={styles.subtitle}>Your current internship assignment details</p>
+        <h3 style={styles.title}>Internship Placement</h3>
+        <p style={styles.subtitle}>Your internship assignment details</p>
       </div>
 
       <div style={styles.infoGrid}>
