@@ -8,9 +8,17 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // TEMPORARY: Set a mock user for development
+  useState(() => {
+    setUser({
+      username: 'Tracy komu',
+      email: 'tracy@22.com',
+      role: 'student'
+    });
+  }, []);
+
   const login = async (username, password) => {
     console.log('Login attempted:', username);
-    // Temporary mock login - replace with actual API call
     setUser({ username, role: 'student' });
     return { username, role: 'student' };
   };
