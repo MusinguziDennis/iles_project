@@ -22,14 +22,14 @@ const StudentDashboard = () => {
     try {
       // Mock data - replace with actual API calls
       setPlacement({
-        company_name: 'Tech Corp Uganda',
+        company_name: 'NexaNovel Tech Uganda',
         company_logo: '🏢',
-        workplace_supervisor: 'Mr. John Okello',
-        workplace_supervisor_email: 'john@techcorp.com',
-        academic_supervisor: 'Dr. Sarah Namukasa',
-        academic_supervisor_email: 'sarah@university.ac.ug',
-        start_date: '2026-01-15',
-        end_date: '2026-05-15',
+        workplace_supervisor: 'Mr. Amos Mirembe',
+        workplace_supervisor_email: 'amosm256@tech.com',
+        academic_supervisor: 'Dr. Peter Wakholi',
+        academic_supervisor_email: 'peterw256@mak.ac.ug',
+        start_date: '2026-06-01',
+        end_date: '2026-08-01',
         status: 'Active'
       });
 
