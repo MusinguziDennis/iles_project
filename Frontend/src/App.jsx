@@ -5,6 +5,7 @@ import Register from './components/Auth/Register';
 import LandingPage from './components/LandingPage';
 import StudentDashboard from './components/Student/StudentDashboard';
 import SupervisorDashboard from './components/Supervisor/SupervisorDashboard';
+import AdminDashboard from './components/Admin/AdminDashboard';
 import PrivateRoute from './components/Common/PrivateRoute';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
           <Route path="/student/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
           <Route path="/supervisor/dashboard" element={<PrivateRoute><SupervisorDashboard /></PrivateRoute>} />
+          <Route path="/admin/dashboard" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
