@@ -4,6 +4,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import LandingPage from './components/LandingPage';
 import StudentDashboard from './components/Student/StudentDashboard';
+import SupervisorDashboard from './components/Supervisor/SupervisorDashboard';
 import PrivateRoute from './components/Common/PrivateRoute';
 
 function App() {
@@ -14,17 +15,9 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Add both dashboard paths */}
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <StudentDashboard />
-            </PrivateRoute>
-          } />
-          <Route path="/student/dashboard" element={
-            <PrivateRoute>
-              <StudentDashboard />
-            </PrivateRoute>
-          } />
+          <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+          <Route path="/student/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
+          <Route path="/supervisor/dashboard" element={<PrivateRoute><SupervisorDashboard /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
