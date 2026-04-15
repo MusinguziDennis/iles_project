@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import UserList from './UserList';
 import PlacementList from './PlacementList';
 import StatsCards from './StatsCards';
+import UserFormModal from './UserFormModal';
+import PlacementFormModal from './PlacementFormModal';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -10,6 +12,12 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal states
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showPlacementModal, setShowPlacementModal] = useState(false);
+  const [editingPlacement, setEditingPlacement] = useState(null);
 
   useEffect(() => {
     // Mock data – replace with API calls later
@@ -28,12 +36,15 @@ const AdminDashboard = () => {
     setLoading(false);
   }, []);
 
+  // User CRUD
   const handleAddUser = () => {
-    alert('Add user form – to be implemented with modal or separate page');
+    setEditingUser(null);
+    setShowUserModal(true);
   };
 
   const handleEditUser = (user) => {
-    alert(`Edit user ${user.username} – to be implemented`);
+    setEditingUser(user);
+    setShowUserModal(true);
   };
 
   const handleDeleteUser = (userId) => {
@@ -42,17 +53,64 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSaveUser = (userData) => {
+    if (editingUser) {
+      // Update existing user
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...userData } : u));
+    } else {
+      // Create new user with a mock ID
+      const newId = Math.max(...users.map(u => u.id), 0) + 1;
+      setUsers([...users, { id: newId, ...userData, is_active: userData.is_active ?? true }]);
+    }
+  };
+
+  // Placement CRUD
   const handleAddPlacement = () => {
-    alert('Add placement form – to be implemented');
+    setEditingPlacement(null);
+    setShowPlacementModal(true);
   };
 
   const handleEditPlacement = (placement) => {
-    alert(`Edit placement for ${placement.student.name} – to be implemented`);
+    setEditingPlacement(placement);
+    setShowPlacementModal(true);
   };
 
   const handleDeletePlacement = (placementId) => {
     if (window.confirm('Are you sure you want to delete this placement?')) {
       setPlacements(placements.filter(p => p.id !== placementId));
+    }
+  };
+
+  const handleSavePlacement = (placementData) => {
+    if (editingPlacement) {
+      // Update existing placement
+      setPlacements(placements.map(p =>
+        p.id === editingPlacement.id
+          ? {
+              ...p,
+              company_name: placementData.company_name,
+              start_date: placementData.start_date,
+              end_date: placementData.end_date,
+              workplace_supervisor: users.find(u => u.id === parseInt(placementData.workplace_supervisor_id)) || null,
+              academic_supervisor: users.find(u => u.id === parseInt(placementData.academic_supervisor_id)) || null,
+            }
+          : p
+      ));
+    } else {
+      // Create new placement
+      const newId = Math.max(...placements.map(p => p.id), 0) + 1;
+      const student = users.find(u => u.id === parseInt(placementData.student_id));
+      const workplaceSupervisor = users.find(u => u.id === parseInt(placementData.workplace_supervisor_id));
+      const academicSupervisor = users.find(u => u.id === parseInt(placementData.academic_supervisor_id));
+      setPlacements([...placements, {
+        id: newId,
+        student: { id: placementData.student_id, name: student ? `${student.first_name} ${student.last_name}` : 'Unknown' },
+        company_name: placementData.company_name,
+        workplace_supervisor: workplaceSupervisor ? { id: workplaceSupervisor.id, name: `${workplaceSupervisor.first_name} ${workplaceSupervisor.last_name}` } : null,
+        academic_supervisor: academicSupervisor ? { id: academicSupervisor.id, name: `${academicSupervisor.first_name} ${academicSupervisor.last_name}` } : null,
+        start_date: placementData.start_date,
+        end_date: placementData.end_date,
+      }]);
     }
   };
 
@@ -164,6 +222,24 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      {showUserModal && (
+        <UserFormModal
+          user={editingUser}
+          onClose={() => setShowUserModal(false)}
+          onSave={handleSaveUser}
+        />
+      )}
+      {showPlacementModal && (
+        <PlacementFormModal
+          placement={editingPlacement}
+          students={users.filter(u => u.role === 'student')}
+          supervisors={users.filter(u => u.role === 'workplace_supervisor' || u.role === 'academic_supervisor')}
+          onClose={() => setShowPlacementModal(false)}
+          onSave={handleSavePlacement}
+        />
+      )}
     </div>
   );
 };
