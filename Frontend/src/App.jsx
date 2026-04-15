@@ -6,6 +6,7 @@ import LandingPage from './components/LandingPage';
 import StudentDashboard from './components/Student/StudentDashboard';
 import SupervisorDashboard from './components/Supervisor/SupervisorDashboard';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import ProfilePage from './components/Profile/ProfilePage';
 import PrivateRoute from './components/Common/PrivateRoute';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/student/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
           <Route path="/supervisor/dashboard" element={<PrivateRoute><SupervisorDashboard /></PrivateRoute>} />
           <Route path="/admin/dashboard" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
