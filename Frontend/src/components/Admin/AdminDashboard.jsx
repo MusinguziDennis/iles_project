@@ -22,16 +22,16 @@ const AdminDashboard = () => {
   useEffect(() => {
     // Mock data – replace with API calls later
     setUsers([
-      { id: 1, username: 'alice_n', email: 'alice@example.com', first_name: 'Alice', last_name: 'Nambi', role: 'student', is_active: true },
-      { id: 2, username: 'brian_m', email: 'brian@example.com', first_name: 'Brian', last_name: 'Mutebi', role: 'student', is_active: true },
-      { id: 3, username: 'john_okello', email: 'john@techcorp.com', first_name: 'John', last_name: 'Okello', role: 'workplace_supervisor', is_active: true },
-      { id: 4, username: 'sarah_nam', email: 'sarah@university.ac.ug', first_name: 'Sarah', last_name: 'Namukasa', role: 'academic_supervisor', is_active: true },
+      { id: 1, username: 'trisha_k', email: 'trisha@example.com', first_name: 'Trisha', last_name: 'Komugisa', role: 'student', is_active: true },
+      { id: 2, username: 'brian_m', email: 'brian@example.com', first_name: 'Brian', last_name: 'Muhwezi', role: 'student', is_active: true },
+      { id: 3, username: 'amos_k', email: 'amos@techcorp.com', first_name: 'Amos', last_name: 'Karuhanga', role: 'workplace_supervisor', is_active: true },
+      { id: 4, username: 'peter_w', email: 'peter@university.ac.ug', first_name: 'Peter', last_name: 'Wakholi', role: 'academic_supervisor', is_active: true },
       { id: 5, username: 'admin_tracy', email: 'admin@iles.com', first_name: 'Tracy', last_name: 'Komukama', role: 'administrator', is_active: true },
     ]);
 
     setPlacements([
-      { id: 101, student: { id: 1, name: 'Alice Nambi' }, company_name: 'Tech Corp Uganda', workplace_supervisor: { id: 3, name: 'John Okello' }, academic_supervisor: { id: 4, name: 'Sarah Namukasa' }, start_date: '2026-01-15', end_date: '2026-05-15' },
-      { id: 102, student: { id: 2, name: 'Brian Mutebi' }, company_name: 'Innovate Solutions', workplace_supervisor: { id: 3, name: 'John Okello' }, academic_supervisor: { id: 4, name: 'Sarah Namukasa' }, start_date: '2026-02-01', end_date: '2026-06-01' },
+      { id: 101, student: { id: 1, name: 'Trisha Komugisa' }, company_name: 'Tech Corp Uganda', workplace_supervisor: { id: 3, name: 'Amos Karuhanga' }, academic_supervisor: { id: 4, name: 'Peter Wakholi' }, start_date: '2026-01-15', end_date: '2026-05-15' },
+      { id: 102, student: { id: 2, name: 'Brian Muhwezi' }, company_name: 'Innovate Solutions', workplace_supervisor: { id: 3, name: 'Amos Karuhanga' }, academic_supervisor: { id: 4, name: 'Peter Wakholi' }, start_date: '2026-02-01', end_date: '2026-06-01' },
     ]);
     setLoading(false);
   }, []);
