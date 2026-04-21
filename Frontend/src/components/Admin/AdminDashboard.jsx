@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import UserList from './UserList';
+import UserList from './Userlist';
 import PlacementList from './PlacementList';
 import StatsCards from './StatsCards';
-import UserFormModal from './UserFormModal';
-import PlacementFormModal from './PlacementFormModal';
+import UserFormModal from './UserForm';
+import PlacementFormModal from './PlacmentForm';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
