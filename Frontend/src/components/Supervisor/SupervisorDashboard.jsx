@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import StudentList from './StudentList';
-import StudentLogs from './StudentLogs';
+import StudentList from './Studentlist';
+import StudentLogs from './Studentlogs';
 
 const SupervisorDashboard = () => {
   const { user } = useAuth();
