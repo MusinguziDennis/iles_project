@@ -1,14 +1,6 @@
 import React from 'react';
 
 const PlacementDetails = ({ placement }) => {
-  if (!placement) {
-    return (
-      <div style={styles.noData}>
-        <p>No placement details available. Please contact your administrator.</p>
-      </div>
-    );
-  }
-
   const styles = {
     container: {
       padding: '10px',
@@ -73,6 +65,14 @@ const PlacementDetails = ({ placement }) => {
       color: '#999',
     },
   };
+
+  if (!placement) {
+    return (
+      <div style={styles.noData}>
+        <p>No placement details available. Please contact your administrator.</p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
