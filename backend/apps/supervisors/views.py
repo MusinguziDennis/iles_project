@@ -67,10 +67,15 @@ class SupervisorReviewCreateView(APIView):
     permission_classes = [IsSupervisor]
 
     def post(self, request, log_id):
+        user = request.user
+        if user.role == 'work_supervisor':
+            student_ids = user.workplace_placements.values_list('student_id', flat=True)
+        else:
+            student_ids = user.academic_placements.values_list('student_id', flat=True)
         try:
-            log = WeeklyLog.objects.get(pk=log_id)
+            log = WeeklyLog.objects.get(pk=log_id, student_id__in=student_ids)
         except WeeklyLog.DoesNotExist:
-            return Response({'detail': 'Log not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Log not found or not assigned to you.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = ReviewCreateSerializer(
             data=request.data,
@@ -100,10 +105,15 @@ class SupervisorStatusUpdateView(APIView):
     permission_classes = [IsSupervisor]
 
     def patch(self, request, pk):
+        user = request.user
+        if user.role == 'work_supervisor':
+            student_ids = user.workplace_placements.values_list('student_id', flat=True)
+        else:
+            student_ids = user.academic_placements.values_list('student_id', flat=True)
         try:
-            log = WeeklyLog.objects.get(pk=pk)
+            log = WeeklyLog.objects.get(pk=pk, student_id__in=student_ids)
         except WeeklyLog.DoesNotExist:
-            return Response({'detail': 'Log not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Log not found or not assigned to you.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = StatusUpdateSerializer(
             data=request.data,
