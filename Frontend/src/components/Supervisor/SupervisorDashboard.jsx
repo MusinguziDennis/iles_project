@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchSupervisorStats, fetchSupervisorLogs, fetchLogDetail } from '../../services/supervisorApi';
+import { fetchSupervisorStats, fetchSupervisorLogs, fetchAssignedStudents, fetchLogDetail } from '../../services/supervisorApi';
 import LogList from './LogList';
 import ReviewForm from './ReviewForm';
+import StudentCard from './StudentCard';
 
 const StatCard = ({ icon, value, label, color }) => (
   <div style={{
@@ -26,23 +27,26 @@ const SupervisorDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [students, setStudents] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('students');
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [statsRes, logsRes] = await Promise.all([
+      const [statsRes, logsRes, studentsRes] = await Promise.all([
         fetchSupervisorStats(),
         fetchSupervisorLogs(),
+        fetchAssignedStudents(),
       ]);
       setStats(statsRes.data);
       setLogs(logsRes.data);
+      setStudents(studentsRes.data);
     } catch (e) {
-      setError('Failed to load dashboard data. Make sure you are logged in as a supervisor.');
+      setError('Failed to load dashboard. Make sure you are logged in as a supervisor.');
     } finally {
       setLoading(false);
     }
@@ -50,7 +54,6 @@ const SupervisorDashboard = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // After a review action, reload the updated log detail and refresh list
   const handleReviewUpdated = async () => {
     if (selectedLog) {
       try {
@@ -61,9 +64,20 @@ const SupervisorDashboard = () => {
     loadData();
   };
 
+  // When clicking View Logs from a student card, filter logs for that student
+  const handleViewStudentLogs = (student) => {
+    setActiveTab('logs');
+  };
+
   const pendingLogs = logs.filter(l => l.status === 'submitted');
   const reviewedLogs = logs.filter(l => l.status === 'reviewed');
   const displayedLogs = activeTab === 'pending' ? pendingLogs : reviewedLogs;
+
+  const tabs = [
+    { key: 'students', label: `👥 My Students (${students.length})` },
+    { key: 'pending', label: `⏳ Pending (${pendingLogs.length})` },
+    { key: 'logs', label: `👁️ Reviewed (${reviewedLogs.length})` },
+  ];
 
   return (
     <div style={{
@@ -73,7 +87,7 @@ const SupervisorDashboard = () => {
     }}>
       <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div style={{
           background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '20px', padding: '28px 32px', marginBottom: '28px',
@@ -99,20 +113,20 @@ const SupervisorDashboard = () => {
           </div>
         </div>
 
-        {/* ── Error ── */}
+        {/* Error */}
         {error && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', color: '#dc2626', fontSize: '14px' }}>
             ⚠️ {error}
           </div>
         )}
 
-        {/* ── Stats ── */}
         {loading ? (
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '60px', fontSize: '16px' }}>
             Loading dashboard...
           </div>
         ) : (
           <>
+            {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
               <StatCard icon="👥" value={stats?.total_students} label="Assigned Students" color="#6366f1" />
               <StatCard icon="⏳" value={stats?.pending_review} label="Pending Review" color="#f59e0b" />
@@ -120,13 +134,10 @@ const SupervisorDashboard = () => {
               <StatCard icon="✅" value={stats?.approved} label="Approved" color="#22c55e" />
             </div>
 
-            {/* ── Tabs ── */}
+            {/* Tabs */}
             <div style={{ background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '4px', width: 'fit-content' }}>
-                {[
-                  { key: 'pending', label: `⏳ Pending Review (${pendingLogs.length})` },
-                  { key: 'reviewed', label: `👁️ Reviewed (${reviewedLogs.length})` },
-                ].map(tab => (
+                {tabs.map(tab => (
                   <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
                     padding: '9px 20px', borderRadius: '9px', border: 'none',
                     fontSize: '14px', fontWeight: '600', cursor: 'pointer',
@@ -137,13 +148,31 @@ const SupervisorDashboard = () => {
                 ))}
               </div>
 
-              <LogList logs={displayedLogs} onSelectLog={setSelectedLog} />
+              {/* Students grid */}
+              {activeTab === 'students' && (
+                students.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
+                    <p style={{ fontSize: '16px', fontWeight: '600' }}>No students assigned yet.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                    {students.map(s => <StudentCard key={s.id} student={s} onViewLogs={handleViewStudentLogs} />)}
+                  </div>
+                )
+              )}
+
+              {/* Pending logs */}
+              {activeTab === 'pending' && <LogList logs={pendingLogs} onSelectLog={setSelectedLog} />}
+
+              {/* Reviewed logs */}
+              {activeTab === 'logs' && <LogList logs={reviewedLogs} onSelectLog={setSelectedLog} />}
             </div>
           </>
         )}
       </div>
 
-      {/* ── Review Modal ── */}
+      {/* Review Modal */}
       {selectedLog && (
         <ReviewForm
           log={selectedLog}
