@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Login from './components/Auth/Login';
+import Login from './components/Auth/login';
 import Register from './components/Auth/Register';
 import LandingPage from './components/LandingPage';
 import StudentDashboard from './components/Student/StudentDashboard';
