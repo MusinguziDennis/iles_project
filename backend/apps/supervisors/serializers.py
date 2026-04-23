@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from apps.evaluations.models import WeeklyLog, Feedback
+from apps.students.models import InternshipPlacement
 from apps.users.models import User
 
 
@@ -15,7 +16,6 @@ class StudentSerializer(serializers.ModelSerializer):
         return obj.get_full_name() or obj.username
 
     def get_company_name(self, obj):
-        # Get company from the student's placement
         placement = getattr(obj, 'placement', None)
         return placement.company_name if placement else 'N/A'
 
@@ -46,19 +46,51 @@ class WeeklyLogSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ReviewCreateSerializer(serializers.ModelSerializer):
-    """Used when a supervisor submits a review comment."""
+class SupervisorStudentSerializer(serializers.ModelSerializer):
+    """Serializes a placement with student info and log summary."""
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    student_id = serializers.SerializerMethodField()
+    total_logs = serializers.SerializerMethodField()
+    pending_logs = serializers.SerializerMethodField()
+    approved_logs = serializers.SerializerMethodField()
 
+    class Meta:
+        model = InternshipPlacement
+        fields = (
+            'id', 'student_id', 'student_name', 'student_email',
+            'company_name', 'start_date', 'end_date',
+            'total_logs', 'pending_logs', 'approved_logs',
+        )
+
+    def get_student_name(self, obj):
+        return obj.student.get_full_name() or obj.student.username
+
+    def get_student_email(self, obj):
+        return obj.student.email
+
+    def get_student_id(self, obj):
+        return obj.student.id
+
+    def get_total_logs(self, obj):
+        return obj.student.weekly_logs.count()
+
+    def get_pending_logs(self, obj):
+        return obj.student.weekly_logs.filter(status='submitted').count()
+
+    def get_approved_logs(self, obj):
+        return obj.student.weekly_logs.filter(status='approved').count()
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = ('comment',)
 
     def validate(self, attrs):
         log = self.context['log']
-        # Cannot review a draft log
         if log.status == 'draft':
             raise serializers.ValidationError('Cannot review a log that has not been submitted yet.')
-        # Cannot add feedback to an already approved log
         if log.status == 'approved':
             raise serializers.ValidationError('This log is already approved and locked.')
         return attrs
@@ -72,11 +104,9 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
 
 class StatusUpdateSerializer(serializers.Serializer):
-    """Used when a supervisor changes the log status."""
-
     VALID_TRANSITIONS = {
         'submitted': ['reviewed'],
-        'reviewed': ['approved', 'submitted'],  # can push back to submitted
+        'reviewed': ['approved', 'submitted'],
     }
 
     status = serializers.ChoiceField(choices=['reviewed', 'approved', 'submitted'])
@@ -86,7 +116,6 @@ class StatusUpdateSerializer(serializers.Serializer):
         allowed = self.VALID_TRANSITIONS.get(log.status, [])
         if new_status not in allowed:
             raise serializers.ValidationError(
-                f"Cannot transition from '{log.status}' to '{new_status}'. "
-                f"Allowed transitions: {allowed}"
+                f"Cannot transition from '{log.status}' to '{new_status}'. Allowed: {allowed}"
             )
         return new_status
