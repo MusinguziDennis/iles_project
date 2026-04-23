@@ -5,13 +5,19 @@ from apps.users.models import User
 
 class StudentSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'full_name', 'email')
+        fields = ('id', 'username', 'full_name', 'email', 'company_name')
 
     def get_full_name(self, obj):
         return obj.get_full_name() or obj.username
+
+    def get_company_name(self, obj):
+        # Get company from the student's placement
+        placement = getattr(obj, 'placement', None)
+        return placement.company_name if placement else 'N/A'
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
