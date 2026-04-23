@@ -58,6 +58,7 @@ const LogList = ({ logs, onSelectLog }) => {
               >
                 <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
                   <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>{log.student.full_name}</div>
+                  <div style={{ fontSize: '12px', color: '#6366f1' }}>{log.student.company_name}</div>
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>{log.student.email}</div>
                 </td>
                 <td style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#334155' }}>
