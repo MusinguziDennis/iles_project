@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
+const BASE = 'http://localhost:8000/api';
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -9,36 +10,30 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On app load, restore user from localStorage if token exists
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
+    if (stored) setUser(JSON.parse(stored));
     setLoading(false);
   }, []);
 
   const login = async (username, password) => {
-    // Call Django JWT endpoint
-    const res = await axios.post('http://localhost:8000/api/token/', { username, password });
+    const res = await axios.post(`${BASE}/token/`, { username, password });
     const { access, refresh } = res.data;
-
-    // Store tokens
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
 
-    // Decode the JWT payload to get user info (base64 decode middle part)
-    const payload = JSON.parse(atob(access.split('.')[1]));
-
-    // Fetch full user profile using the token
-    const profileRes = await axios.get('http://localhost:8000/api/users/me/', {
+    const profileRes = await axios.get(`${BASE}/users/me/`, {
       headers: { Authorization: `Bearer ${access}` },
     });
-
     const userData = profileRes.data;
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
+  };
+
+  const register = async (formData) => {
+    const res = await axios.post(`${BASE}/users/register/`, formData);
+    return res.data;
   };
 
   const logout = () => {
@@ -48,8 +43,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Helper: get the correct dashboard path for a role
+  const getDashboardPath = (role) => {
+    switch (role) {
+      case 'work_supervisor':
+      case 'university_supervisor': return '/supervisor/dashboard';
+      case 'student': return '/student/dashboard';
+      case 'admin': return '/admin/dashboard';
+      default: return '/';
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, getDashboardPath }}>
       {children}
     </AuthContext.Provider>
   );
