@@ -14,14 +14,45 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-          <Route path="/student/dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-          <Route path="/supervisor/dashboard" element={<PrivateRoute><SupervisorDashboard /></PrivateRoute>} />
-          <Route path="/admin/dashboard" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+
+          {/* Student only */}
+          <Route path="/student/dashboard" element={
+            <PrivateRoute allowedRoles={['student']}>
+              <StudentDashboard />
+            </PrivateRoute>
+          } />
+
+          {/* Supervisor only */}
+          <Route path="/supervisor/dashboard" element={
+            <PrivateRoute allowedRoles={['work_supervisor', 'university_supervisor']}>
+              <SupervisorDashboard />
+            </PrivateRoute>
+          } />
+
+          {/* Admin only */}
+          <Route path="/admin/dashboard" element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </PrivateRoute>
+          } />
+
+          {/* Any logged-in user */}
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <ProfilePage />
+            </PrivateRoute>
+          } />
+
+          {/* Legacy /dashboard → student dashboard */}
+          <Route path="/dashboard" element={
+            <PrivateRoute allowedRoles={['student']}>
+              <StudentDashboard />
+            </PrivateRoute>
+          } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
