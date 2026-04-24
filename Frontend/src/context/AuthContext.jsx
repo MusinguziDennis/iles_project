@@ -43,6 +43,20 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Refresh access token using refresh token
+  const refreshToken = async () => {
+    const refresh = localStorage.getItem('refresh_token');
+    if (!refresh) { logout(); return null; }
+    try {
+      const res = await axios.post(`${BASE}/token/refresh/`, { refresh });
+      localStorage.setItem('access_token', res.data.access);
+      return res.data.access;
+    } catch {
+      logout();
+      return null;
+    }
+  };
+
   // Helper: get the correct dashboard path for a role
   const getDashboardPath = (role) => {
     switch (role) {
@@ -55,7 +69,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, getDashboardPath }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, getDashboardPath, refreshToken }}>
       {children}
     </AuthContext.Provider>
   );
