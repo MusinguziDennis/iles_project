@@ -3,8 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import UserList from './Userlist';
 import PlacementList from './PlacementList';
 import StatsCards from './StatsCards';
-import UserFormModal from './UserForm';
-import PlacementFormModal from './PlacmentForm';
+import UserFormModal from "./UserFormModal"; 
+import PlacementFormModal from "./PlacementFormModal";  
 
 const AdminDashboard = () => {
   const { user } = useAuth();
