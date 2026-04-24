@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, getDashboardPath } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const successMessage = location.state?.message || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       const userData = await login(username, password);
       navigate(getDashboardPath(userData.role));
     } catch (err) {
       setError('Invalid username or password. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -142,6 +148,11 @@ const Login = () => {
           <p style={styles.subtitle}>Login to access your internship logbook</p>
         </div>
 
+        {successMessage && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px', marginBottom: '20px', textAlign: 'center', fontSize: '14px', color: '#16a34a' }}>
+            ✅ {successMessage}
+          </div>
+        )}
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -192,8 +203,9 @@ const Login = () => {
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+          disabled={loading}
           >
-            Log In
+            {loading ? 'Signing in...' : 'Log In'}
           </button>
         </form>
 
