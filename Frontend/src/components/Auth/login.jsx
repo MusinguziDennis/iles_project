@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, getDashboardPath } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,17 +14,7 @@ const Login = () => {
     setError('');
     try {
       const userData = await login(username, password);
-      // Redirect based on role
-      const role = userData.role;
-      if (role === 'work_supervisor' || role === 'university_supervisor') {
-        navigate('/supervisor/dashboard');
-      } else if (role === 'student') {
-        navigate('/student/dashboard');
-      } else if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
+      navigate(getDashboardPath(userData.role));
     } catch (err) {
       setError('Invalid username or password. Please try again.');
     }
