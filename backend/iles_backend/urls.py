@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -12,6 +15,6 @@ urlpatterns = [
     # App APIs
     path('api/users/', include('apps.users.urls')),
     path('api/students/', include('apps.students.urls')),
-    path('api/supervisor/', include('apps.supervisors.urls')),
+    path('api/supervisors/', include('apps.supervisors.urls')),
     path('api/evaluations/', include('apps.evaluations.urls')),
 ]
