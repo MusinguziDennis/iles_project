@@ -1,170 +1,185 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import StudentList from './StudentList';
-import StudentLogs from './StudentLogs';
+import { fetchSupervisorStats, fetchSupervisorLogs, fetchAssignedStudents, fetchLogDetail } from '../../services/supervisorApi';
+import LogList from './LogList';
+import ReviewForm from './ReviewForm';
+import StudentCard from './StudentCard';
+
+const StatCard = ({ icon, value, label, color }) => (
+  <div style={{
+    background: 'white', borderRadius: '16px', padding: '24px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
+    display: 'flex', alignItems: 'center', gap: '16px',
+  }}>
+    <div style={{
+      width: '52px', height: '52px', borderRadius: '14px',
+      background: `${color}15`, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', fontSize: '24px', flexShrink: 0,
+    }}>{icon}</div>
+    <div>
+      <div style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{value ?? '—'}</div>
+      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>{label}</div>
+    </div>
+  </div>
+);
 
 const SupervisorDashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [logs, setLogs] = useState([]);
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedLog, setSelectedLog] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('students');
 
-  useEffect(() => {
-    // Mock data – replace with API call later
-    setStudents([
-      {
-        id: 1,
-        name: 'Alice Nambi',
-        reg_no: '2020/CS/001',
-        company: 'Tech Corp Uganda',
-        placement_id: 101,
-        logs: [
-          { id: 101, week_number: 1, title: 'First Week', content: 'Learned about company policies...', status: 'submitted', submitted_at: '2026-04-01' },
-          { id: 102, week_number: 2, title: 'Project Work', content: 'Started working on frontend...', status: 'reviewed', submitted_at: '2026-04-08', feedback: 'Good progress, add more details', feedback_from: 'Workplace Supervisor' }
-        ]
-      },
-      {
-        id: 2,
-        name: 'Brian Mutebi',
-        reg_no: '2020/CS/045',
-        company: 'Innovate Solutions',
-        placement_id: 102,
-        logs: [
-          { id: 201, week_number: 1, title: 'Orientation', content: 'Met the team...', status: 'submitted', submitted_at: '2026-04-02' },
-          { id: 202, week_number: 2, title: 'Development', content: 'Working on API integration...', status: 'draft', submitted_at: null }
-        ]
-      }
-    ]);
-    setLoading(false);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [statsRes, logsRes, studentsRes] = await Promise.all([
+        fetchSupervisorStats(),
+        fetchSupervisorLogs(),
+        fetchAssignedStudents(),
+      ]);
+      setStats(statsRes.data);
+      setLogs(logsRes.data);
+      setStudents(studentsRes.data);
+    } catch (e) {
+      setError('Failed to load dashboard. Make sure you are logged in as a supervisor.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleSelectStudent = (student) => {
-    setSelectedStudent(student);
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleReviewUpdated = async () => {
+    if (selectedLog) {
+      try {
+        const res = await fetchLogDetail(selectedLog.id);
+        setSelectedLog(res.data);
+      } catch (_) {}
+    }
+    loadData();
+  };
+
+  // When clicking View Logs from a student card, filter logs for that student
+  const handleViewStudentLogs = (student) => {
     setActiveTab('logs');
   };
 
-  const handleBackToList = () => {
-    setSelectedStudent(null);
-    setActiveTab('students');
-  };
+  const pendingLogs = logs.filter(l => l.status === 'submitted');
+  const reviewedLogs = logs.filter(l => l.status === 'reviewed');
+  const displayedLogs = activeTab === 'pending' ? pendingLogs : reviewedLogs;
 
-  const handleUpdateLog = (updatedLog) => {
-    // Update the log in the selected student's logs
-    if (selectedStudent) {
-      const updatedLogs = selectedStudent.logs.map(log =>
-        log.id === updatedLog.id ? updatedLog : log
-      );
-      setSelectedStudent({ ...selectedStudent, logs: updatedLogs });
-      // Also update in the main students array
-      setStudents(students.map(s =>
-        s.id === selectedStudent.id ? { ...s, logs: updatedLogs } : s
-      ));
-    }
-  };
-
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      fontFamily: "'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      padding: '20px',
-    },
-    mainContent: {
-      maxWidth: '1400px',
-      margin: '0 auto',
-    },
-    welcomeCard: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      borderRadius: '20px',
-      padding: '30px',
-      color: 'white',
-      marginBottom: '30px',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-    },
-    welcomeTitle: {
-      fontSize: '28px',
-      marginBottom: '10px',
-    },
-    welcomeSubtitle: {
-      fontSize: '16px',
-      opacity: 0.9,
-    },
-    tabsContainer: {
-      display: 'flex',
-      gap: '10px',
-      marginBottom: '20px',
-      backgroundColor: 'white',
-      borderRadius: '15px',
-      padding: '5px',
-    },
-    tab: {
-      flex: 1,
-      padding: '12px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      borderRadius: '10px',
-      border: 'none',
-      fontSize: '16px',
-      fontWeight: '500',
-      transition: 'all 0.3s',
-    },
-    activeTab: {
-      backgroundColor: '#667eea',
-      color: 'white',
-    },
-    inactiveTab: {
-      backgroundColor: 'transparent',
-      color: '#666',
-    },
-    contentCard: {
-      backgroundColor: 'white',
-      borderRadius: '20px',
-      padding: '30px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-    },
-  };
-
-  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>Loading dashboard...</div>;
+  const tabs = [
+    { key: 'students', label: `👥 My Students (${students.length})` },
+    { key: 'pending', label: `⏳ Pending (${pendingLogs.length})` },
+    { key: 'logs', label: `👁️ Reviewed (${reviewedLogs.length})` },
+  ];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.mainContent}>
-        <div style={styles.welcomeCard}>
-          <h1 style={styles.welcomeTitle}>Welcome, {user?.username || 'Supervisor'} 👋</h1>
-          <p style={styles.welcomeSubtitle}>Manage and review internship logs of your assigned students.</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f0c29 0%, #1e1b4b 50%, #0f0c29 100%)',
+      fontFamily: "'Inter','Segoe UI',sans-serif", padding: '24px',
+    }}>
+      <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{
+          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '20px', padding: '28px 32px', marginBottom: '28px',
+          backdropFilter: 'blur(12px)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px',
+        }}>
+          <div>
+            <div style={{ fontSize: '13px', color: '#818cf8', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Supervisor Portal
+            </div>
+            <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', color: 'white' }}>
+              Welcome back, {user?.first_name || user?.username} 👋
+            </h1>
+            <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.55)', fontSize: '15px' }}>
+              Review and approve your students' weekly internship logs.
+            </p>
+          </div>
+          <div style={{
+            background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)',
+            borderRadius: '12px', padding: '10px 20px', color: '#a5b4fc', fontSize: '13px', fontWeight: '600',
+          }}>
+            🎓 {user?.role === 'work_supervisor' ? 'Workplace Supervisor' : 'Academic Supervisor'}
+          </div>
         </div>
 
-        <div style={styles.tabsContainer}>
-          <button
-            onClick={() => setActiveTab('students')}
-            style={{ ...styles.tab, ...(activeTab === 'students' ? styles.activeTab : styles.inactiveTab) }}
-          >
-            👥 My Students
-          </button>
-          {selectedStudent && (
-            <button
-              onClick={() => setActiveTab('logs')}
-              style={{ ...styles.tab, ...(activeTab === 'logs' ? styles.activeTab : styles.inactiveTab) }}
-            >
-              📝 {selectedStudent.name}'s Logs
-            </button>
-          )}
-        </div>
+        {/* Error */}
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', color: '#dc2626', fontSize: '14px' }}>
+            ⚠️ {error}
+          </div>
+        )}
 
-        <div style={styles.contentCard}>
-          {activeTab === 'students' && (
-            <StudentList students={students} onSelectStudent={handleSelectStudent} />
-          )}
-          {activeTab === 'logs' && selectedStudent && (
-            <StudentLogs
-              student={selectedStudent}
-              onBack={handleBackToList}
-              onUpdateLog={handleUpdateLog}
-            />
-          )}
-        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '60px', fontSize: '16px' }}>
+            Loading dashboard...
+          </div>
+        ) : (
+          <>
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+              <StatCard icon="👥" value={stats?.total_students} label="Assigned Students" color="#6366f1" />
+              <StatCard icon="⏳" value={stats?.pending_review} label="Pending Review" color="#f59e0b" />
+              <StatCard icon="👁️" value={stats?.reviewed} label="Reviewed" color="#3b82f6" />
+              <StatCard icon="✅" value={stats?.approved} label="Approved" color="#22c55e" />
+            </div>
+
+            {/* Tabs */}
+            <div style={{ background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '4px', width: 'fit-content' }}>
+                {tabs.map(tab => (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+                    padding: '9px 20px', borderRadius: '9px', border: 'none',
+                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                    background: activeTab === tab.key ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'transparent',
+                    color: activeTab === tab.key ? 'white' : '#64748b',
+                    transition: 'all 0.2s',
+                  }}>{tab.label}</button>
+                ))}
+              </div>
+
+              {/* Students grid */}
+              {activeTab === 'students' && (
+                students.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
+                    <p style={{ fontSize: '16px', fontWeight: '600' }}>No students assigned yet.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                    {students.map(s => <StudentCard key={s.id} student={s} onViewLogs={handleViewStudentLogs} />)}
+                  </div>
+                )
+              )}
+
+              {/* Pending logs */}
+              {activeTab === 'pending' && <LogList logs={pendingLogs} onSelectLog={setSelectedLog} />}
+
+              {/* Reviewed logs */}
+              {activeTab === 'logs' && <LogList logs={reviewedLogs} onSelectLog={setSelectedLog} />}
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Review Modal */}
+      {selectedLog && (
+        <ReviewForm
+          log={selectedLog}
+          onClose={() => setSelectedLog(null)}
+          onUpdated={handleReviewUpdated}
+        />
+      )}
     </div>
   );
 };

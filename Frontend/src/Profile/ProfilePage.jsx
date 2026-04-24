@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth(); // we'll add updateUser to context

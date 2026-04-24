@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import LogReviewModal from './LogReviewModal';
+import LogReviewModal from './Logreview';
 
 const StudentLogs = ({ student, onBack, onUpdateLog }) => {
   const [selectedLog, setSelectedLog] = useState(null);

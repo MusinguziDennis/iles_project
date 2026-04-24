@@ -11,11 +11,22 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      await login(username, password);
-      navigate('/');
+      const userData = await login(username, password);
+      // Redirect based on role
+      const role = userData.role;
+      if (role === 'work_supervisor' || role === 'university_supervisor') {
+        navigate('/supervisor/dashboard');
+      } else if (role === 'student') {
+        navigate('/student/dashboard');
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
-      setError('Invalid credentials');
+      setError('Invalid username or password. Please try again.');
     }
   };
 
