@@ -156,25 +156,23 @@ class StudentPlacementDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = 'id'
 
+    def get_serializer_class(self):
+        """Use detailed serializer for GET, create/update for PUT/PATCH."""
+        if self.request.method in ['PUT', 'PATCH']:
+            return InternshipPlacementCreateUpdateSerializer
+        return InternshipPlacementDetailedSerializer
+    
     def get_queryset(self):
         """Filter based on user role."""
         user = self.request.user
         queryset = InternshipPlacement.objects.select_related(
             'student', 'workplace_supervisor', 'academic_supervisor'
         )
-
         if user.role == 'student':
-            queryset = queryset.filter(student=user)
+            return queryset.filter(student=user)
         elif user.role in ['work_supervisor', 'university_supervisor']:
             if user.role == 'work_supervisor':
-                queryset = queryset.filter(workplace_supervisor=user)
+                return queryset.filter(workplace_supervisor=user)
             else:
-                queryset = queryset.filter(academic_supervisor=user)
-
+                return queryset.filter(academic_supervisor=user)
         return queryset
-
-    def get_serializer_class(self):
-        """Use detailed serializer for GET, create/update for PUT/PATCH."""
-        if self.request.method == 'GET':
-            return InternshipPlacementDetailedSerializer
-        return InternshipPlacementCreateUpdateSerializer
