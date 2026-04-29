@@ -17,16 +17,14 @@ const WeeklyLogForm = ({ log, onClose, onSuccess }) => {
     e.preventDefault();
     setError('');
 
-    if (!formData.week_number || !formData.title || !formData.content) {
+    if (!formData.week_number || !formData.content) {
       setError('Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Saving log:', formData);
-      alert(log ? 'Log updated successfully!' : 'Log created successfully!');
-      onSuccess();
+      onSuccess(formData);
     } catch (err) {
       setError('Failed to save log. Please try again.');
     } finally {
