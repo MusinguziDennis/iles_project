@@ -15,6 +15,6 @@ urlpatterns = [
     # App APIs
     path('api/users/', include('apps.users.urls')),
     path('api/students/', include('apps.students.urls')),
-    path('api/supervisors/', include('apps.supervisors.urls')),
+    path('api/supervisor/', include('apps.supervisors.urls')),
     path('api/evaluations/', include('apps.evaluations.urls')),
 ]
