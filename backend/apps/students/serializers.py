@@ -140,7 +140,7 @@ class InternshipPlacementCreateUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'student_name', 'workplace_supervisor_name', 'academic_supervisor_name', 'created_at', 'updated_at']
 
     def validate(self, data):
-        """Validate date range: end_date must be after start_date."""
+        """Enhanced validation for internship dates."""
         start_date = data.get('start_date')
         end_date = data.get('end_date')
 
@@ -149,6 +149,12 @@ class InternshipPlacementCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "End date must be after start date."
                 )
+
+        # Check if trying to create a past internship
+        if start_date and start_date < timezone.now().date():
+            raise serializers.ValidationError(
+                "Start date cannot be in the past."
+            )
 
         return data
 

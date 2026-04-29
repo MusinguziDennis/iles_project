@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework import serializers, status
 from .models import User
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -106,3 +107,22 @@ class UserDetailView(APIView):
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminUserListView(ListCreateAPIView):
+    """Admin-only endpoint for user management."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return RegisterSerializer
+        return UserSerializer
+
+
+class AdminUserDetailView(RetrieveUpdateDestroyAPIView):
+    """Admin-only endpoint for user details."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
