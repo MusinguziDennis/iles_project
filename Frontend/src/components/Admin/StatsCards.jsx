@@ -2,52 +2,27 @@ import React from 'react';
 
 const StatsCards = ({ users, placements }) => {
   const students = users.filter(u => u.role === 'student').length;
-  const supervisors = users.filter(u => u.role === 'workplace_supervisor' || u.role === 'academic_supervisor').length;
-  const admins = users.filter(u => u.role === 'administrator').length;
+  const supervisors = users.filter(u => u.role === 'work_supervisor' || u.role === 'university_supervisor').length;
+  const admins = users.filter(u => u.role === 'admin').length;
 
-  const styles = {
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '20px',
-      marginBottom: '30px',
-    },
-    card: {
-      backgroundColor: 'white',
-      borderRadius: '15px',
-      padding: '20px',
-      textAlign: 'center',
-      boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-    },
-    value: {
-      fontSize: '32px',
-      fontWeight: 'bold',
-      color: '#667eea',
-    },
-    label: {
-      color: '#666',
-      marginTop: '5px',
-    },
-  };
+  const cards = [
+    { icon: '👥', value: users.length, label: 'Total Users', color: '#6366f1' },
+    { icon: '🎓', value: students, label: 'Students', color: '#0ea5e9' },
+    { icon: '👨🏫', value: supervisors, label: 'Supervisors', color: '#10b981' },
+    { icon: '🏢', value: placements.length, label: 'Placements', color: '#f59e0b' },
+  ];
 
   return (
-    <div style={styles.grid}>
-      <div style={styles.card}>
-        <div style={styles.value}>{users.length}</div>
-        <div style={styles.label}>Total Users</div>
-      </div>
-      <div style={styles.card}>
-        <div style={styles.value}>{students}</div>
-        <div style={styles.label}>Students</div>
-      </div>
-      <div style={styles.card}>
-        <div style={styles.value}>{supervisors}</div>
-        <div style={styles.label}>Supervisors</div>
-      </div>
-      <div style={styles.card}>
-        <div style={styles.value}>{placements.length}</div>
-        <div style={styles.label}>Active Placements</div>
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+      {cards.map(c => (
+        <div key={c.label} style={{ background: 'white', borderRadius: '16px', padding: '20px 24px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `${c.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>{c.icon}</div>
+          <div>
+            <div style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{c.value}</div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>{c.label}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
