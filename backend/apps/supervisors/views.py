@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import serializers
 
 from apps.evaluations.models import WeeklyLog
 from apps.students.models import InternshipPlacement
@@ -28,12 +29,46 @@ def _get_student_ids(user):
     return user.academic_placements.values_list('student_id', flat=True)
 
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('id', 'message', 'is_read', 'created_at')
+
+
+class SupervisorNotificationListView(generics.ListAPIView):
+    """GET /api/supervisor/notifications/"""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsSupervisor]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+
+class SupervisorNotificationMarkReadView(APIView):
+    """PATCH /api/supervisor/notifications/<id>/read/"""
+    permission_classes = [IsSupervisor]
+
+    def patch(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, user=request.user)
+            notif.is_read = True
+            notif.save()
+            return Response(NotificationSerializer(notif).data)
+        except Notification.DoesNotExist:
+            return Response({'detail': 'Notification not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class SupervisorNotificationMarkAllReadView(APIView):
+    """POST /api/supervisor/notifications/mark-all-read/"""
+    permission_classes = [IsSupervisor]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'detail': 'All notifications marked as read.'})
+
+
 class SupervisorStudentListView(APIView):
-    """
-    GET /api/supervisor/students/
-    Returns all students assigned to the logged-in supervisor
-    with their placement details and log summary.
-    """
+    """GET /api/supervisor/students/"""
     permission_classes = [IsSupervisor]
 
     def get(self, request):
@@ -41,17 +76,12 @@ class SupervisorStudentListView(APIView):
         placements = InternshipPlacement.objects.filter(
             student_id__in=student_ids
         ).select_related('student', 'workplace_supervisor', 'academic_supervisor')
-
         data = SupervisorStudentSerializer(placements, many=True, context={'request': request}).data
         return Response(data)
 
 
 class SupervisorLogListView(generics.ListAPIView):
-    """
-    GET /api/supervisor/logs/
-    Returns all logs with status = submitted or reviewed,
-    scoped to students assigned to this supervisor.
-    """
+    """GET /api/supervisor/logs/"""
     serializer_class = WeeklyLogSerializer
     permission_classes = [IsSupervisor]
 
@@ -63,10 +93,7 @@ class SupervisorLogListView(generics.ListAPIView):
 
 
 class SupervisorLogDetailView(generics.RetrieveAPIView):
-    """
-    GET /api/supervisor/logs/<id>/
-    Returns full details of a single log including all feedback.
-    """
+    """GET /api/supervisor/logs/<id>/"""
     serializer_class = WeeklyLogSerializer
     permission_classes = [IsSupervisor]
 
@@ -75,10 +102,7 @@ class SupervisorLogDetailView(generics.RetrieveAPIView):
 
 
 class SupervisorReviewCreateView(APIView):
-    """
-    POST /api/supervisor/review/<log_id>/
-    Supervisor adds a feedback comment to a log.
-    """
+    """POST /api/supervisor/review/<log_id>/"""
     permission_classes = [IsSupervisor]
 
     def post(self, request, log_id):
@@ -97,10 +121,7 @@ class SupervisorReviewCreateView(APIView):
 
 
 class SupervisorStatusUpdateView(APIView):
-    """
-    PATCH /api/supervisor/logs/<id>/status/
-    Supervisor changes log status with valid transition enforcement.
-    """
+    """PATCH /api/supervisor/logs/<id>/status/"""
     permission_classes = [IsSupervisor]
 
     def patch(self, request, pk):
@@ -124,10 +145,7 @@ class SupervisorStatusUpdateView(APIView):
 
 
 class SupervisorStatsView(APIView):
-    """
-    GET /api/supervisor/stats/
-    Returns summary counts for the supervisor dashboard.
-    """
+    """GET /api/supervisor/stats/"""
     permission_classes = [IsSupervisor]
 
     def get(self, request):
