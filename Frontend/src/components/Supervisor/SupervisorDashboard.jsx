@@ -1,184 +1,375 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchSupervisorStats, fetchSupervisorLogs, fetchAssignedStudents, fetchLogDetail } from '../../services/supervisorApi';
+import {
+  fetchSupervisorStats, fetchSupervisorLogs,
+  fetchAssignedStudents, fetchLogDetail,
+} from '../../services/supervisorApi';
 import LogList from './LogList';
 import ReviewForm from './ReviewForm';
 import StudentCard from './StudentCard';
 
-const StatCard = ({ icon, value, label, color }) => (
-  <div style={{
-    background: 'white', borderRadius: '16px', padding: '24px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
+// ── Sidebar nav items ──────────────────────────────────────────────────────────
+const NAV = [
+  { key: 'overview',  icon: '🏠', label: 'Overview' },
+  { key: 'students',  icon: '👥', label: 'My Students' },
+  { key: 'pending',   icon: '⏳', label: 'Pending Review' },
+  { key: 'reviewed',  icon: '👁️', label: 'Reviewed Logs' },
+  { key: 'approved',  icon: '✅', label: 'Approved Logs' },
+];
+
+// ── Stat card ──────────────────────────────────────────────────────────────────
+const StatCard = ({ icon, value, label, color, onClick, active }) => (
+  <div onClick={onClick} style={{
+    background: active ? `linear-gradient(135deg,${color},${color}cc)` : 'white',
+    borderRadius: '16px', padding: '20px 24px',
+    boxShadow: active ? `0 8px 24px ${color}40` : '0 2px 12px rgba(0,0,0,0.06)',
+    border: active ? 'none' : '1px solid #f1f5f9',
     display: 'flex', alignItems: 'center', gap: '16px',
+    cursor: onClick ? 'pointer' : 'default',
+    transition: 'all 0.25s',
   }}>
     <div style={{
-      width: '52px', height: '52px', borderRadius: '14px',
-      background: `${color}15`, display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontSize: '24px', flexShrink: 0,
+      width: '48px', height: '48px', borderRadius: '12px',
+      background: active ? 'rgba(255,255,255,0.2)' : `${color}15`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: '22px', flexShrink: 0,
     }}>{icon}</div>
     <div>
-      <div style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{value ?? '—'}</div>
-      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>{label}</div>
+      <div style={{ fontSize: '28px', fontWeight: '900', color: active ? 'white' : '#0f172a', lineHeight: 1 }}>{value ?? '—'}</div>
+      <div style={{ fontSize: '12px', color: active ? 'rgba(255,255,255,0.8)' : '#64748b', marginTop: '4px', fontWeight: '500' }}>{label}</div>
     </div>
   </div>
 );
 
+// ── Main component ─────────────────────────────────────────────────────────────
 const SupervisorDashboard = () => {
-  const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [students, setStudents] = useState([]);
+  const { user, logout } = useAuth();
+  const [stats, setStats]         = useState(null);
+  const [logs, setLogs]           = useState([]);
+  const [students, setStudents]   = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('students');
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [activePage, setActivePage] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(true);   // desktop default open
+  const [isMobile, setIsMobile]   = useState(window.innerWidth < 768);
+
+  // Responsive: detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+      else setSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
-      const [statsRes, logsRes, studentsRes] = await Promise.all([
-        fetchSupervisorStats(),
-        fetchSupervisorLogs(),
-        fetchAssignedStudents(),
+      const [sRes, lRes, stRes] = await Promise.all([
+        fetchSupervisorStats(), fetchSupervisorLogs(), fetchAssignedStudents(),
       ]);
-      setStats(statsRes.data);
-      setLogs(logsRes.data);
-      setStudents(studentsRes.data);
-    } catch (e) {
+      setStats(sRes.data); setLogs(lRes.data); setStudents(stRes.data);
+    } catch {
       setError('Failed to load dashboard. Make sure you are logged in as a supervisor.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleReviewUpdated = async () => {
     if (selectedLog) {
-      try {
-        const res = await fetchLogDetail(selectedLog.id);
-        setSelectedLog(res.data);
-      } catch (_) {}
+      try { const r = await fetchLogDetail(selectedLog.id); setSelectedLog(r.data); } catch {}
     }
     loadData();
   };
 
-  // When clicking View Logs from a student card, filter logs for that student
-  const handleViewStudentLogs = (student) => {
-    setActiveTab('logs');
+  const pendingLogs  = logs.filter(l => l.status === 'submitted');
+  const reviewedLogs = logs.filter(l => l.status === 'reviewed');
+  const approvedLogs = logs.filter(l => l.status === 'approved');
+
+  const navigate = (page) => {
+    setActivePage(page);
+    if (isMobile) setSidebarOpen(false);
   };
 
-  const pendingLogs = logs.filter(l => l.status === 'submitted');
-  const reviewedLogs = logs.filter(l => l.status === 'reviewed');
-  const displayedLogs = activeTab === 'pending' ? pendingLogs : reviewedLogs;
+  // ── Sidebar ────────────────────────────────────────────────────────────────
+  const Sidebar = () => (
+    <>
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99,
+        }} />
+      )}
 
-  const tabs = [
-    { key: 'students', label: `👥 My Students (${students.length})` },
-    { key: 'pending', label: `⏳ Pending (${pendingLogs.length})` },
-    { key: 'logs', label: `👁️ Reviewed (${reviewedLogs.length})` },
-  ];
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0c29 0%, #1e1b4b 50%, #0f0c29 100%)',
-      fontFamily: "'Inter','Segoe UI',sans-serif", padding: '24px',
-    }}>
-      <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-
-        {/* Header */}
+      <aside style={{
+        position: isMobile ? 'fixed' : 'sticky',
+        top: 0, left: 0, height: '100vh',
+        width: sidebarOpen ? '260px' : (isMobile ? '0' : '72px'),
+        background: 'linear-gradient(180deg,#0f0c29 0%,#1e1b4b 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex', flexDirection: 'column',
+        transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+        overflow: 'hidden', zIndex: 100, flexShrink: 0,
+      }}>
+        {/* Logo */}
         <div style={{
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '20px', padding: '28px 32px', marginBottom: '28px',
-          backdropFilter: 'blur(12px)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px',
+          padding: '24px 20px', display: 'flex', alignItems: 'center',
+          gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+          minHeight: '72px',
         }}>
-          <div>
-            <div style={{ fontSize: '13px', color: '#818cf8', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Supervisor Portal
-            </div>
-            <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', color: 'white' }}>
-              Welcome back, {user?.first_name || user?.username} 👋
-            </h1>
-            <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.55)', fontSize: '15px' }}>
-              Review and approve your students' weekly internship logs.
-            </p>
-          </div>
           <div style={{
-            background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)',
-            borderRadius: '12px', padding: '10px 20px', color: '#a5b4fc', fontSize: '13px', fontWeight: '600',
-          }}>
-            🎓 {user?.role === 'work_supervisor' ? 'Workplace Supervisor' : 'Academic Supervisor'}
-          </div>
+            width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
+          }}>📘</div>
+          {sidebarOpen && (
+            <span style={{ color: 'white', fontWeight: '800', fontSize: '18px', whiteSpace: 'nowrap' }}>ILES</span>
+          )}
         </div>
 
-        {/* Error */}
-        {error && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', color: '#dc2626', fontSize: '14px' }}>
-            ⚠️ {error}
+        {/* User info */}
+        {sidebarOpen && (
+          <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '50%',
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '18px', fontWeight: '800', color: 'white', marginBottom: '10px',
+            }}>
+              {(user?.first_name || user?.username || 'S').charAt(0).toUpperCase()}
+            </div>
+            <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.username}
+            </div>
+            <div style={{ color: '#818cf8', fontSize: '12px', marginTop: '2px' }}>
+              {user?.role === 'work_supervisor' ? 'Workplace Supervisor' : 'Academic Supervisor'}
+            </div>
           </div>
         )}
 
-        {loading ? (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '60px', fontSize: '16px' }}>
-            Loading dashboard...
-          </div>
-        ) : (
-          <>
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-              <StatCard icon="👥" value={stats?.total_students} label="Assigned Students" color="#6366f1" />
-              <StatCard icon="⏳" value={stats?.pending_review} label="Pending Review" color="#f59e0b" />
-              <StatCard icon="👁️" value={stats?.reviewed} label="Reviewed" color="#3b82f6" />
-              <StatCard icon="✅" value={stats?.approved} label="Approved" color="#22c55e" />
-            </div>
-
-            {/* Tabs */}
-            <div style={{ background: 'white', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '4px', width: 'fit-content' }}>
-                {tabs.map(tab => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
-                    padding: '9px 20px', borderRadius: '9px', border: 'none',
-                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                    background: activeTab === tab.key ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'transparent',
-                    color: activeTab === tab.key ? 'white' : '#64748b',
-                    transition: 'all 0.2s',
-                  }}>{tab.label}</button>
-                ))}
+        {/* Nav items */}
+        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
+          {NAV.map(item => {
+            const count = item.key === 'students' ? students.length
+              : item.key === 'pending' ? pendingLogs.length
+              : item.key === 'reviewed' ? reviewedLogs.length
+              : item.key === 'approved' ? approvedLogs.length : null;
+            const isActive = activePage === item.key;
+            return (
+              <div key={item.key} onClick={() => navigate(item.key)} style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: sidebarOpen ? '11px 14px' : '11px 18px',
+                borderRadius: '10px', cursor: 'pointer', marginBottom: '4px',
+                background: isActive ? 'rgba(99,102,241,0.25)' : 'transparent',
+                border: isActive ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent',
+                transition: 'all 0.2s',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+              }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
+                {sidebarOpen && (
+                  <>
+                    <span style={{ color: isActive ? '#a5b4fc' : 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: isActive ? '700' : '500', flex: 1, whiteSpace: 'nowrap' }}>
+                      {item.label}
+                    </span>
+                    {count !== null && (
+                      <span style={{
+                        background: isActive ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                        color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
+                        borderRadius: '100px', padding: '2px 8px', fontSize: '11px', fontWeight: '700',
+                      }}>{count}</span>
+                    )}
+                  </>
+                )}
               </div>
+            );
+          })}
+        </nav>
 
-              {/* Students grid */}
-              {activeTab === 'students' && (
-                students.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
-                    <p style={{ fontSize: '16px', fontWeight: '600' }}>No students assigned yet.</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                    {students.map(s => <StudentCard key={s.id} student={s} onViewLogs={handleViewStudentLogs} />)}
-                  </div>
-                )
-              )}
+        {/* Logout */}
+        <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div onClick={logout} style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            padding: sidebarOpen ? '11px 14px' : '11px 18px',
+            borderRadius: '10px', cursor: 'pointer',
+            justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            transition: 'background 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <span style={{ fontSize: '18px' }}>🚪</span>
+            {sidebarOpen && <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', fontWeight: '500' }}>Logout</span>}
+          </div>
+        </div>
+      </aside>
+    </>
+  );
 
-              {/* Pending logs */}
-              {activeTab === 'pending' && <LogList logs={pendingLogs} onSelectLog={setSelectedLog} />}
+  // ── Page content ───────────────────────────────────────────────────────────
+  const PageContent = () => {
+    if (loading) return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: '#94a3b8', fontSize: '16px' }}>
+        <div>⏳ Loading dashboard...</div>
+      </div>
+    );
 
-              {/* Reviewed logs */}
-              {activeTab === 'logs' && <LogList logs={reviewedLogs} onSelectLog={setSelectedLog} />}
+    if (error) return (
+      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '20px', color: '#dc2626' }}>
+        ⚠️ {error}
+      </div>
+    );
+
+    switch (activePage) {
+      case 'overview':
+        return (
+          <div>
+            <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>Overview</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '16px', marginBottom: '32px' }}>
+              <StatCard icon="👥" value={stats?.total_students} label="Assigned Students" color="#6366f1" onClick={() => navigate('students')} />
+              <StatCard icon="⏳" value={stats?.pending_review} label="Pending Review" color="#f59e0b" onClick={() => navigate('pending')} active={false} />
+              <StatCard icon="👁️" value={stats?.reviewed} label="Reviewed" color="#3b82f6" onClick={() => navigate('reviewed')} />
+              <StatCard icon="✅" value={stats?.approved} label="Approved" color="#22c55e" onClick={() => navigate('approved')} />
             </div>
-          </>
-        )}
+
+            {/* Recent pending logs */}
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>⏳ Logs Awaiting Review</h3>
+                <button onClick={() => navigate('pending')} style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>View all →</button>
+              </div>
+              <LogList logs={pendingLogs.slice(0, 5)} onSelectLog={setSelectedLog} />
+            </div>
+          </div>
+        );
+
+      case 'students':
+        return (
+          <div>
+            <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>My Students ({students.length})</h2>
+            {students.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>👥</div>
+                <p style={{ fontWeight: '600' }}>No students assigned yet.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: '20px' }}>
+                {students.map(s => <StudentCard key={s.id} student={s} onViewLogs={() => navigate('pending')} />)}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'pending':
+        return (
+          <div>
+            <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>⏳ Pending Review ({pendingLogs.length})</h2>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+              <LogList logs={pendingLogs} onSelectLog={setSelectedLog} />
+            </div>
+          </div>
+        );
+
+      case 'reviewed':
+        return (
+          <div>
+            <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>👁️ Reviewed Logs ({reviewedLogs.length})</h2>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+              <LogList logs={reviewedLogs} onSelectLog={setSelectedLog} />
+            </div>
+          </div>
+        );
+
+      case 'approved':
+        return (
+          <div>
+            <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>✅ Approved Logs ({approvedLogs.length})</h2>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+              <LogList logs={approvedLogs} onSelectLog={setSelectedLog} />
+            </div>
+          </div>
+        );
+
+      default: return null;
+    }
+  };
+
+  // ── Layout ─────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+      <Sidebar />
+
+      {/* Main area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+
+        {/* Top navbar */}
+        <header style={{
+          height: '64px', background: 'white', borderBottom: '1px solid #e2e8f0',
+          display: 'flex', alignItems: 'center', padding: '0 24px',
+          gap: '16px', position: 'sticky', top: 0, zIndex: 50,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        }}>
+          {/* Hamburger */}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: '6px',
+            borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '5px',
+          }}>
+            {[0,1,2].map(i => (
+              <span key={i} style={{ display: 'block', width: '20px', height: '2px', background: '#64748b', borderRadius: '2px' }} />
+            ))}
+          </button>
+
+          {/* Page title */}
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+              {NAV.find(n => n.key === activePage)?.icon} {NAV.find(n => n.key === activePage)?.label}
+            </span>
+          </div>
+
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Notification bell */}
+            <div style={{ position: 'relative' }}>
+              <button style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 10px', cursor: 'pointer', fontSize: '16px' }}>🔔</button>
+              {pendingLogs.length > 0 && (
+                <span style={{
+                  position: 'absolute', top: '-4px', right: '-4px',
+                  background: '#ef4444', color: 'white', borderRadius: '50%',
+                  width: '18px', height: '18px', fontSize: '10px', fontWeight: '800',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{pendingLogs.length}</span>
+              )}
+            </div>
+
+            {/* Avatar */}
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '50%',
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+            }}>
+              {(user?.first_name || user?.username || 'S').charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main style={{ flex: 1, padding: '28px 24px', overflowY: 'auto' }}>
+          <PageContent />
+        </main>
       </div>
 
-      {/* Review Modal */}
+      {/* Review modal */}
       {selectedLog && (
-        <ReviewForm
-          log={selectedLog}
-          onClose={() => setSelectedLog(null)}
-          onUpdated={handleReviewUpdated}
-        />
+        <ReviewForm log={selectedLog} onClose={() => setSelectedLog(null)} onUpdated={handleReviewUpdated} />
       )}
     </div>
   );
