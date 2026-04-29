@@ -49,9 +49,7 @@ const PlacementFormModal = ({ placement, students, supervisors, onClose, onSave 
     if (!validate()) return;
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
       onSave(formData);
-      onClose();
     } catch (err) {
       setErrors({ form: 'Failed to save placement.' });
     } finally {
@@ -152,8 +150,8 @@ const PlacementFormModal = ({ placement, students, supervisors, onClose, onSave 
 
   // Filter students and supervisors from props
   const studentList = students.filter(u => u.role === 'student');
-  const workplaceSupervisors = supervisors.filter(u => u.role === 'workplace_supervisor');
-  const academicSupervisors = supervisors.filter(u => u.role === 'academic_supervisor');
+  const workplaceSupervisors = supervisors.filter(u => u.role === 'work_supervisor');
+  const academicSupervisors = supervisors.filter(u => u.role === 'university_supervisor');
 
   return (
     <div style={styles.overlay} onClick={onClose}>
