@@ -12,7 +12,7 @@ from .serializers import (
     FeedbackSerializer,
     FeedbackListSerializer,
 )
-
+from .permissions import IsAuthorizedSupervisor
 
 class WeeklyLogViewSet(viewsets.ModelViewSet):
     """
@@ -155,7 +155,7 @@ class FeedbackViewSet(viewsets.ModelViewSet):
     - Only supervisors can create feedback
     - Only supervisors (who created the feedback or are admins) can update/delete
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAuthorizedSupervisor]  # Add permission
     serializer_class = FeedbackSerializer
 
     def get_queryset(self):
@@ -188,6 +188,9 @@ class FeedbackViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Set the supervisor as the current user when creating feedback."""
+        # Verify user is a supervisor
+        if self.request.user.role not in ['work_supervisor', 'university_supervisor']:
+            raise PermissionError("Only supervisors can create feedback.")
         serializer.save(supervisor=self.request.user)
 
     def perform_update(self, serializer):
