@@ -7,6 +7,8 @@ import {
 import LogList from './LogList';
 import ReviewForm from './ReviewForm';
 import StudentCard from './StudentCard';
+import NotificationsPanel from './NotificationsPanel';
+import SupervisorProfile from './SupervisorProfile';
 
 // ── Sidebar nav items ──────────────────────────────────────────────────────────
 const NAV = [
@@ -15,6 +17,7 @@ const NAV = [
   { key: 'pending',   icon: '⏳', label: 'Pending Review' },
   { key: 'reviewed',  icon: '👁️', label: 'Reviewed Logs' },
   { key: 'approved',  icon: '✅', label: 'Approved Logs' },
+  { key: 'profile',   icon: '👤', label: 'My Profile' },
 ];
 
 // ── Stat card ──────────────────────────────────────────────────────────────────
@@ -51,8 +54,9 @@ const SupervisorDashboard = () => {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
   const [activePage, setActivePage] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);   // desktop default open
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile]   = useState(window.innerWidth < 768);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Responsive: detect screen size
   useEffect(() => {
@@ -298,6 +302,9 @@ const SupervisorDashboard = () => {
           </div>
         );
 
+      case 'profile':
+        return <SupervisorProfile />;
+
       default: return null;
     }
   };
@@ -318,6 +325,7 @@ const SupervisorDashboard = () => {
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}>
           {/* Hamburger */}
+          {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} />}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '6px',
             borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '5px',
@@ -338,7 +346,7 @@ const SupervisorDashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {/* Notification bell */}
             <div style={{ position: 'relative' }}>
-              <button style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 10px', cursor: 'pointer', fontSize: '16px' }}>🔔</button>
+              <button onClick={() => setShowNotifications(!showNotifications)} style={{ background: showNotifications ? '#f0f4ff' : '#f8fafc', border: `1px solid ${showNotifications ? '#6366f1' : '#e2e8f0'}`, borderRadius: '10px', padding: '8px 10px', cursor: 'pointer', fontSize: '16px' }}>🔔</button>
               {pendingLogs.length > 0 && (
                 <span style={{
                   position: 'absolute', top: '-4px', right: '-4px',
