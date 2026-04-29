@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import UserList from './Userlist';
 import PlacementList from './PlacementList';
 import StatsCards from './StatsCards';
-import UserFormModal from "./UserFormModal"; 
-import PlacementFormModal from "./PlacementFormModal";  
+import UserFormModal from './UserFormModal';
+import PlacementFormModal from './PlacementFormModal';
+import {
+  fetchUsers, createUser, updateUser, deleteUser,
+  fetchPlacements, createPlacement, updatePlacement, deletePlacement,
+} from '../../services/adminApi';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -12,105 +16,84 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Modal states
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
   const [editingPlacement, setEditingPlacement] = useState(null);
 
-  useEffect(() => {
-    // Mock data – replace with API calls later
-    setUsers([
-      { id: 1, username: 'trisha_k', email: 'trisha@example.com', first_name: 'Trisha', last_name: 'Komugisa', role: 'student', is_active: true },
-      { id: 2, username: 'brian_m', email: 'brian@example.com', first_name: 'Brian', last_name: 'Muhwezi', role: 'student', is_active: true },
-      { id: 3, username: 'amos_k', email: 'amos@techcorp.com', first_name: 'Amos', last_name: 'Karuhanga', role: 'workplace_supervisor', is_active: true },
-      { id: 4, username: 'peter_w', email: 'peter@university.ac.ug', first_name: 'Peter', last_name: 'Wakholi', role: 'academic_supervisor', is_active: true },
-      { id: 5, username: 'admin_tracy', email: 'admin@iles.com', first_name: 'Tracy', last_name: 'Komukama', role: 'administrator', is_active: true },
-    ]);
-
-    setPlacements([
-      { id: 101, student: { id: 1, name: 'Trisha Komugisa' }, company_name: 'Tech Corp Uganda', workplace_supervisor: { id: 3, name: 'Amos Karuhanga' }, academic_supervisor: { id: 4, name: 'Peter Wakholi' }, start_date: '2026-01-15', end_date: '2026-05-15' },
-      { id: 102, student: { id: 2, name: 'Brian Muhwezi' }, company_name: 'Innovate Solutions', workplace_supervisor: { id: 3, name: 'Amos Karuhanga' }, academic_supervisor: { id: 4, name: 'Peter Wakholi' }, start_date: '2026-02-01', end_date: '2026-06-01' },
-    ]);
-    setLoading(false);
+  const loadData = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const [usersRes, placementsRes] = await Promise.all([
+        fetchUsers(),
+        fetchPlacements(),
+      ]);
+      setUsers(usersRes.data);
+      // Normalize placement data to match component expectations
+      setPlacements(placementsRes.data.map(p => ({
+        ...p,
+        student: { id: p.id, name: p.student_name },
+        workplace_supervisor: { name: p.workplace_supervisor_name },
+        academic_supervisor: { name: p.academic_supervisor_name },
+      })));
+    } catch (e) {
+      setError('Failed to load data. Make sure you are logged in as admin.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // User CRUD
-  const handleAddUser = () => {
-    setEditingUser(null);
-    setShowUserModal(true);
-  };
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const handleEditUser = (user) => {
-    setEditingUser(user);
-    setShowUserModal(true);
-  };
-
-  const handleDeleteUser = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(u => u.id !== userId));
+  // ── User CRUD ──────────────────────────────────────────────────────────────
+  const handleSaveUser = async (userData) => {
+    try {
+      if (editingUser) {
+        await updateUser(editingUser.id, userData);
+      } else {
+        await createUser({ ...userData, confirm_password: userData.password });
+      }
+      setShowUserModal(false);
+      loadData();
+    } catch (e) {
+      alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save user.');
     }
   };
 
-  const handleSaveUser = (userData) => {
-    if (editingUser) {
-      // Update existing user
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...userData } : u));
-    } else {
-      // Create new user with a mock ID
-      const newId = Math.max(...users.map(u => u.id), 0) + 1;
-      setUsers([...users, { id: newId, ...userData, is_active: userData.is_active ?? true }]);
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await deleteUser(userId);
+      loadData();
+    } catch {
+      alert('Failed to delete user.');
     }
   };
 
-  // Placement CRUD
-  const handleAddPlacement = () => {
-    setEditingPlacement(null);
-    setShowPlacementModal(true);
-  };
-
-  const handleEditPlacement = (placement) => {
-    setEditingPlacement(placement);
-    setShowPlacementModal(true);
-  };
-
-  const handleDeletePlacement = (placementId) => {
-    if (window.confirm('Are you sure you want to delete this placement?')) {
-      setPlacements(placements.filter(p => p.id !== placementId));
+  // ── Placement CRUD ─────────────────────────────────────────────────────────
+  const handleSavePlacement = async (placementData) => {
+    try {
+      if (editingPlacement) {
+        await updatePlacement(editingPlacement.id, placementData);
+      } else {
+        await createPlacement(placementData);
+      }
+      setShowPlacementModal(false);
+      loadData();
+    } catch (e) {
+      alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save placement.');
     }
   };
 
-  const handleSavePlacement = (placementData) => {
-    if (editingPlacement) {
-      // Update existing placement
-      setPlacements(placements.map(p =>
-        p.id === editingPlacement.id
-          ? {
-              ...p,
-              company_name: placementData.company_name,
-              start_date: placementData.start_date,
-              end_date: placementData.end_date,
-              workplace_supervisor: users.find(u => u.id === parseInt(placementData.workplace_supervisor_id)) || null,
-              academic_supervisor: users.find(u => u.id === parseInt(placementData.academic_supervisor_id)) || null,
-            }
-          : p
-      ));
-    } else {
-      // Create new placement
-      const newId = Math.max(...placements.map(p => p.id), 0) + 1;
-      const student = users.find(u => u.id === parseInt(placementData.student_id));
-      const workplaceSupervisor = users.find(u => u.id === parseInt(placementData.workplace_supervisor_id));
-      const academicSupervisor = users.find(u => u.id === parseInt(placementData.academic_supervisor_id));
-      setPlacements([...placements, {
-        id: newId,
-        student: { id: placementData.student_id, name: student ? `${student.first_name} ${student.last_name}` : 'Unknown' },
-        company_name: placementData.company_name,
-        workplace_supervisor: workplaceSupervisor ? { id: workplaceSupervisor.id, name: `${workplaceSupervisor.first_name} ${workplaceSupervisor.last_name}` } : null,
-        academic_supervisor: academicSupervisor ? { id: academicSupervisor.id, name: `${academicSupervisor.first_name} ${academicSupervisor.last_name}` } : null,
-        start_date: placementData.start_date,
-        end_date: placementData.end_date,
-      }]);
+  const handleDeletePlacement = async (placementId) => {
+    if (!window.confirm('Are you sure you want to delete this placement?')) return;
+    try {
+      await deletePlacement(placementId);
+      loadData();
+    } catch {
+      alert('Failed to delete placement.');
     }
   };
 
@@ -118,87 +101,68 @@ const AdminDashboard = () => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      fontFamily: "'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      fontFamily: "'Inter','Segoe UI',sans-serif",
       padding: '20px',
     },
-    mainContent: {
-      maxWidth: '1400px',
-      margin: '0 auto',
-    },
+    mainContent: { maxWidth: '1400px', margin: '0 auto' },
     welcomeCard: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      borderRadius: '20px',
-      padding: '30px',
-      color: 'white',
-      marginBottom: '30px',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-    },
-    welcomeTitle: {
-      fontSize: '28px',
-      marginBottom: '10px',
-    },
-    welcomeSubtitle: {
-      fontSize: '16px',
-      opacity: 0.9,
+      background: 'rgba(255,255,255,0.1)',
+      backdropFilter: 'blur(12px)',
+      borderRadius: '20px', padding: '30px', color: 'white',
+      marginBottom: '30px', border: '1px solid rgba(255,255,255,0.2)',
     },
     tabsContainer: {
-      display: 'flex',
-      gap: '10px',
-      marginBottom: '20px',
-      backgroundColor: 'white',
-      borderRadius: '15px',
-      padding: '5px',
+      display: 'flex', gap: '10px', marginBottom: '20px',
+      backgroundColor: 'white', borderRadius: '15px', padding: '5px',
     },
     tab: {
-      flex: 1,
-      padding: '12px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      borderRadius: '10px',
-      border: 'none',
-      fontSize: '16px',
-      fontWeight: '500',
-      transition: 'all 0.3s',
-    },
-    activeTab: {
-      backgroundColor: '#667eea',
-      color: 'white',
-    },
-    inactiveTab: {
-      backgroundColor: 'transparent',
-      color: '#666',
+      flex: 1, padding: '12px', textAlign: 'center', cursor: 'pointer',
+      borderRadius: '10px', border: 'none', fontSize: '15px', fontWeight: '600', transition: 'all 0.3s',
     },
     contentCard: {
-      backgroundColor: 'white',
-      borderRadius: '20px',
-      padding: '30px',
+      backgroundColor: 'white', borderRadius: '20px', padding: '30px',
       boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
     },
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>Loading admin dashboard...</div>;
+  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: 'white', fontSize: '18px' }}>Loading admin dashboard...</div>;
 
   return (
     <div style={styles.container}>
       <div style={styles.mainContent}>
+
+        {/* Header */}
         <div style={styles.welcomeCard}>
-          <h1 style={styles.welcomeTitle}>Admin Dashboard, {user?.username || 'Admin'} 👑</h1>
-          <p style={styles.welcomeSubtitle}>Manage users, placements, and oversee the entire internship programme.</p>
+          <h1 style={{ fontSize: '28px', margin: '0 0 8px', fontWeight: '800' }}>
+            Admin Dashboard 👑
+          </h1>
+          <p style={{ margin: 0, opacity: 0.85 }}>
+            Welcome, {user?.first_name || user?.username}. Manage users and internship placements.
+          </p>
         </div>
+
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '16px', marginBottom: '20px', color: '#dc2626' }}>
+            ⚠️ {error}
+          </div>
+        )}
 
         <StatsCards users={users} placements={placements} />
 
+        {/* Tabs */}
         <div style={styles.tabsContainer}>
-          <button
-            onClick={() => setActiveTab('users')}
-            style={{ ...styles.tab, ...(activeTab === 'users' ? styles.activeTab : styles.inactiveTab) }}
-          >
+          <button onClick={() => setActiveTab('users')} style={{
+            ...styles.tab,
+            background: activeTab === 'users' ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'transparent',
+            color: activeTab === 'users' ? 'white' : '#666',
+          }}>
             👥 Users ({users.length})
           </button>
-          <button
-            onClick={() => setActiveTab('placements')}
-            style={{ ...styles.tab, ...(activeTab === 'placements' ? styles.activeTab : styles.inactiveTab) }}
-          >
+          <button onClick={() => setActiveTab('placements')} style={{
+            ...styles.tab,
+            background: activeTab === 'placements' ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'transparent',
+            color: activeTab === 'placements' ? 'white' : '#666',
+          }}>
             🏢 Placements ({placements.length})
           </button>
         </div>
@@ -207,23 +171,22 @@ const AdminDashboard = () => {
           {activeTab === 'users' && (
             <UserList
               users={users}
-              onAdd={handleAddUser}
-              onEdit={handleEditUser}
+              onAdd={() => { setEditingUser(null); setShowUserModal(true); }}
+              onEdit={(u) => { setEditingUser(u); setShowUserModal(true); }}
               onDelete={handleDeleteUser}
             />
           )}
           {activeTab === 'placements' && (
             <PlacementList
               placements={placements}
-              onAdd={handleAddPlacement}
-              onEdit={handleEditPlacement}
+              onAdd={() => { setEditingPlacement(null); setShowPlacementModal(true); }}
+              onEdit={(p) => { setEditingPlacement(p); setShowPlacementModal(true); }}
               onDelete={handleDeletePlacement}
             />
           )}
         </div>
       </div>
 
-      {/* Modals */}
       {showUserModal && (
         <UserFormModal
           user={editingUser}
@@ -235,7 +198,7 @@ const AdminDashboard = () => {
         <PlacementFormModal
           placement={editingPlacement}
           students={users.filter(u => u.role === 'student')}
-          supervisors={users.filter(u => u.role === 'workplace_supervisor' || u.role === 'academic_supervisor')}
+          supervisors={users.filter(u => u.role === 'work_supervisor' || u.role === 'university_supervisor')}
           onClose={() => setShowPlacementModal(false)}
           onSave={handleSavePlacement}
         />
