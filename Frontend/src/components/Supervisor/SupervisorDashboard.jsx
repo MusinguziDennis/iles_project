@@ -78,8 +78,13 @@ const SupervisorDashboard = () => {
         fetchSupervisorStats(), fetchSupervisorLogs(), fetchAssignedStudents(),
       ]);
       setStats(sRes.data); setLogs(lRes.data); setStudents(stRes.data);
-    } catch {
-      setError('Failed to load dashboard. Make sure you are logged in as a supervisor.');
+    } catch (e) {
+      const msg = e?.response?.status === 401 ? 'Session expired. Please log in again.'
+        : e?.response?.status === 403 ? 'Access denied. You need a supervisor account.'
+        : e?.response?.status === 500 ? 'Server error. Make sure the backend is running.'
+        : e?.message?.includes('Network') ? 'Cannot reach server. Make sure backend is running on port 8000.'
+        : 'Failed to load dashboard.';
+      setError(msg);
     } finally { setLoading(false); }
   }, []);
 
