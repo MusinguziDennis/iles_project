@@ -1,142 +1,106 @@
 import React from 'react';
 
 const PlacementDetails = ({ placement }) => {
-  const styles = {
-    container: {
-      padding: '10px',
-    },
-    header: {
-      marginBottom: '25px',
-    },
-    title: {
-      fontSize: '24px',
-      color: '#333',
-      marginBottom: '5px',
-    },
-    subtitle: {
-      color: '#666',
-    },
-    infoGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '20px',
-      marginBottom: '30px',
-    },
-    infoCard: {
-      backgroundColor: '#f8f9fa',
-      borderRadius: '15px',
-      padding: '20px',
-    },
-    cardTitle: {
-      fontSize: '18px',
-      color: '#667eea',
-      marginBottom: '15px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-    },
-    infoRow: {
-      marginBottom: '12px',
-    },
-    label: {
-      fontWeight: 'bold',
-      color: '#555',
-      display: 'block',
-      marginBottom: '5px',
-      fontSize: '12px',
-      textTransform: 'uppercase',
-    },
-    value: {
-      color: '#333',
-      fontSize: '16px',
-    },
-    statusBadge: {
-      display: 'inline-block',
-      padding: '5px 12px',
-      borderRadius: '20px',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      backgroundColor: '#d4edda',
-      color: '#155724',
-    },
-    noData: {
-      textAlign: 'center',
-      padding: '40px',
-      color: '#999',
-    },
-  };
-
   if (!placement) {
     return (
-      <div style={styles.noData}>
-        <p>No placement details available. Please contact your administrator.</p>
+      <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <h3 style={{ color: '#854d0e', margin: '0 0 8px' }}>No Placement Assigned</h3>
+        <p style={{ color: '#92400e', margin: 0 }}>You have not been assigned to a company or supervisor yet. Please contact your administrator.</p>
       </div>
     );
   }
 
+  // Support both real API fields and legacy fields
+  const workSupervisor = placement.workplace_supervisor;
+  const acadSupervisor = placement.academic_supervisor;
+
+  const card = (title, icon, children) => (
+    <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '15px', fontWeight: '700', color: '#6366f1' }}>
+        <span>{icon}</span>{title}
+      </div>
+      {children}
+    </div>
+  );
+
+  const row = (label, value) => (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>{label}</div>
+      <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: '500' }}>{value || '—'}</div>
+    </div>
+  );
+
+  // Calculate internship progress
+  const today = new Date();
+  const start = new Date(placement.start_date);
+  const end = new Date(placement.end_date);
+  const total = end - start;
+  const elapsed = today - start;
+  const progress = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+  const isActive = today >= start && today <= end;
+
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Internship Placement</h3>
-        <p style={styles.subtitle}>Your internship assignment details</p>
+    <div>
+      {/* Status banner */}
+      <div style={{
+        background: isActive ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#f1f5f9',
+        borderRadius: '16px', padding: '20px 24px', marginBottom: '24px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px',
+      }}>
+        <div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: isActive ? 'white' : '#0f172a' }}>
+            🏢 {placement.company_name}
+          </div>
+          <div style={{ fontSize: '13px', color: isActive ? 'rgba(255,255,255,0.75)' : '#64748b', marginTop: '4px' }}>
+            {placement.start_date} → {placement.end_date}
+          </div>
+        </div>
+        <span style={{
+          background: isActive ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
+          color: isActive ? 'white' : '#64748b',
+          padding: '6px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: '700',
+        }}>
+          {isActive ? '🟢 Active' : today < start ? '🔵 Upcoming' : '⚫ Completed'}
+        </span>
       </div>
 
-      <div style={styles.infoGrid}>
-        <div style={styles.infoCard}>
-          <div style={styles.cardTitle}>
-            <span>🏢</span> Company Information
+      {/* Progress bar */}
+      {isActive && (
+        <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>Internship Progress</span>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#6366f1' }}>{progress}%</span>
           </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Company Name</div>
-            <div style={styles.value}>{placement.company_name}</div>
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Status</div>
-            <div style={styles.statusBadge}>{placement.status || 'Active'}</div>
+          <div style={{ background: '#f1f5f9', borderRadius: '100px', height: '8px' }}>
+            <div style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#6366f1,#22c55e)', borderRadius: '100px', height: '8px', transition: 'width 0.5s' }} />
           </div>
         </div>
+      )}
 
-        <div style={styles.infoCard}>
-          <div style={styles.cardTitle}>
-            <span>👨‍💼</span> Workplace Supervisor
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Name</div>
-            <div style={styles.value}>{placement.workplace_supervisor}</div>
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Email</div>
-            <div style={styles.value}>{placement.workplace_supervisor_email}</div>
-          </div>
-        </div>
-
-        <div style={styles.infoCard}>
-          <div style={styles.cardTitle}>
-            <span>👩‍🏫</span> Academic Supervisor
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Name</div>
-            <div style={styles.value}>{placement.academic_supervisor}</div>
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Email</div>
-            <div style={styles.value}>{placement.academic_supervisor_email}</div>
-          </div>
-        </div>
-
-        <div style={styles.infoCard}>
-          <div style={styles.cardTitle}>
-            <span>📅</span> Internship Period
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>Start Date</div>
-            <div style={styles.value}>{placement.start_date}</div>
-          </div>
-          <div style={styles.infoRow}>
-            <div style={styles.label}>End Date</div>
-            <div style={styles.value}>{placement.end_date}</div>
-          </div>
-        </div>
+      {/* Info cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '16px' }}>
+        {card('Workplace Supervisor', '👨💼', (
+          <>
+            {row('Name', workSupervisor?.full_name || workSupervisor?.username || placement.workplace_supervisor_name)}
+            {row('Email', workSupervisor?.email)}
+            {row('Phone', workSupervisor?.phone_number)}
+          </>
+        ))}
+        {card('Academic Supervisor', '🎓', (
+          <>
+            {row('Name', acadSupervisor?.full_name || acadSupervisor?.username || placement.academic_supervisor_name)}
+            {row('Email', acadSupervisor?.email)}
+            {row('Phone', acadSupervisor?.phone_number)}
+          </>
+        ))}
+        {card('Internship Period', '📅', (
+          <>
+            {row('Start Date', placement.start_date)}
+            {row('End Date', placement.end_date)}
+            {row('Duration', placement.duration_days ? `${placement.duration_days} days` : null)}
+          </>
+        ))}
       </div>
     </div>
   );
