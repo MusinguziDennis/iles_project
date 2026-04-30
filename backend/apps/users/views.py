@@ -1,9 +1,10 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import serializers, status
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from .models import User
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -66,8 +67,32 @@ class MeView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ChangePasswordView(APIView):
+    """POST /api/users/change-password/"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return Response({'detail': 'Both old_password and new_password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(old_password):
+            return Response({'detail': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(new_password, request.user)
+        except ValidationError as e:
+            return Response({'detail': list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({'detail': 'Password changed successfully.'})
+
+
 class UserListView(APIView):
-    """GET /api/users/list/ — returns all users (admin only)"""
+    """GET /api/users/list/ — admin only"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -107,22 +132,3 @@ class UserDetailView(APIView):
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class AdminUserListView(ListCreateAPIView):
-    """Admin-only endpoint for user management."""
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
-
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return RegisterSerializer
-        return UserSerializer
-
-
-class AdminUserDetailView(RetrieveUpdateDestroyAPIView):
-    """Admin-only endpoint for user details."""
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
