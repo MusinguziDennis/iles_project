@@ -3,188 +3,124 @@ import React, { useState } from 'react';
 const WeeklyLogForm = ({ log, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     week_number: log?.week_number || '',
-    title: log?.title || '',
     content: log?.content || '',
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: '' });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.week_number) errs.week_number = 'Week number is required.';
+    if (formData.week_number < 1 || formData.week_number > 52) errs.week_number = 'Week number must be between 1 and 52.';
+    if (!formData.content.trim()) errs.content = 'Content is required.';
+    if (formData.content.trim().length < 20) errs.content = 'Content must be at least 20 characters.';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (!formData.week_number || !formData.content) {
-      setError('Please fill in all fields');
-      return;
-    }
-
+    if (!validate()) return;
     setLoading(true);
     try {
-      onSuccess(formData);
+      await onSuccess({ week_number: parseInt(formData.week_number), content: formData.content });
     } catch (err) {
-      setError('Failed to save log. Please try again.');
+      setErrors({ general: 'Failed to save log. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const styles = {
-    modalOverlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
+  const inp = (name) => ({
+    name,
+    value: formData[name],
+    onChange: handleChange,
+    style: {
+      width: '100%', padding: '11px 14px', borderRadius: '10px', fontSize: '14px',
+      outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+      border: errors[name] ? '2px solid #ef4444' : '2px solid #e2e8f0',
+      transition: 'border 0.2s',
     },
-    modal: {
-      backgroundColor: 'white',
-      borderRadius: '20px',
-      width: '90%',
-      maxWidth: '600px',
-      maxHeight: '90vh',
-      overflow: 'auto',
-      padding: '30px',
-    },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '20px',
-    },
-    title: {
-      fontSize: '24px',
-      color: '#333',
-    },
-    closeBtn: {
-      background: 'none',
-      border: 'none',
-      fontSize: '24px',
-      cursor: 'pointer',
-      color: '#999',
-    },
-    inputGroup: {
-      marginBottom: '20px',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '8px',
-      fontWeight: 'bold',
-      color: '#555',
-    },
-    input: {
-      width: '100%',
-      padding: '10px',
-      border: '2px solid #e0e0e0',
-      borderRadius: '8px',
-      fontSize: '16px',
-      boxSizing: 'border-box',
-    },
-    textarea: {
-      width: '100%',
-      padding: '10px',
-      border: '2px solid #e0e0e0',
-      borderRadius: '8px',
-      fontSize: '16px',
-      minHeight: '150px',
-      fontFamily: 'inherit',
-      boxSizing: 'border-box',
-    },
-    buttonGroup: {
-      display: 'flex',
-      gap: '10px',
-      justifyContent: 'flex-end',
-      marginTop: '20px',
-    },
-    buttonSubmit: {
-      backgroundColor: '#667eea',
-      color: 'white',
-      padding: '10px 20px',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-    },
-    buttonCancel: {
-      backgroundColor: '#6c757d',
-      color: 'white',
-      padding: '10px 20px',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-    },
-    error: {
-      backgroundColor: '#fee',
-      color: '#e74c3c',
-      padding: '10px',
-      borderRadius: '8px',
-      marginBottom: '20px',
-    },
-  };
+  });
 
   return (
-    <div style={styles.modalOverlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.header}>
-          <h2 style={styles.title}>{log ? 'Edit Weekly Log' : 'Create New Weekly Log'}</h2>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
+      onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>
+              {log ? '✏️ Edit Weekly Log' : '📝 New Weekly Log'}
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+              {log ? 'Update your log entry' : 'Document your weekly internship activities'}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {errors.general && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', color: '#dc2626', fontSize: '14px' }}>
+            ⚠️ {errors.general}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Week Number</label>
-            <input
-              type="number"
-              name="week_number"
-              value={formData.week_number}
-              onChange={handleChange}
-              placeholder="e.g., 1, 2, 3..."
-              style={styles.input}
-              required
-            />
+          {/* Week number */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+              Week Number *
+            </label>
+            <input type="number" min="1" max="52" placeholder="e.g. 1, 2, 3..." {...inp('week_number')} />
+            {errors.week_number && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.week_number}</div>}
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Log Title</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="What did you work on this week?"
-              style={styles.input}
-              required
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Weekly Report Content</label>
+          {/* Content */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+              Weekly Report Content *
+            </label>
             <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
-              placeholder="Describe your activities, achievements, challenges, and lessons learned this week..."
-              style={styles.textarea}
-              required
+              rows={7}
+              placeholder="Describe your activities, achievements, challenges, and lessons learned this week. Be specific and detailed..."
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: '10px', fontSize: '14px',
+                outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical',
+                border: errors.content ? '2px solid #ef4444' : '2px solid #e2e8f0', lineHeight: '1.6',
+              }}
             />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              {errors.content
+                ? <div style={{ color: '#ef4444', fontSize: '12px' }}>{errors.content}</div>
+                : <div />
+              }
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>{formData.content.length} chars</div>
+            </div>
           </div>
 
-          <div style={styles.buttonGroup}>
-            <button type="button" onClick={onClose} style={styles.buttonCancel}>
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={onClose} style={{ padding: '10px 24px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={loading} style={styles.buttonSubmit}>
-              {loading ? 'Saving...' : (log ? 'Update Log' : 'Create Log')}
+            <button type="submit" disabled={loading} style={{
+              padding: '10px 24px', borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white',
+              fontWeight: '700', fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}>
+              {loading ? 'Saving...' : log ? 'Update Log' : 'Create Log'}
             </button>
           </div>
         </form>
