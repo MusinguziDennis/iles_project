@@ -8,6 +8,7 @@ import SupervisorDashboard from './components/Supervisor/SupervisorDashboard';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ProfilePage from './Profile/ProfilePage';
 import PrivateRoute from './components/Common/PrivateRoute';
+import NotFoundPage from './components/NotFoundPage';
 
 function App() {
   return (
@@ -53,6 +54,9 @@ function App() {
               <StudentDashboard />
             </PrivateRoute>
           } />
+
+          {/* 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
