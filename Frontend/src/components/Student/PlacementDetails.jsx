@@ -31,7 +31,7 @@ const PlacementDetails = ({ placement }) => {
     </div>
   );
 
-  // Calculate internship progress
+  // Calculate your internship progress
   const today = new Date();
   const start = new Date(placement.start_date);
   const end = new Date(placement.end_date);
@@ -80,7 +80,7 @@ const PlacementDetails = ({ placement }) => {
 
       {/* Info cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '16px' }}>
-        {card('Workplace Supervisor', '👨💼', (
+        {card('Workplace Supervisor', '👨', (
           <>
             {row('Name', workSupervisor?.full_name || workSupervisor?.username || placement.workplace_supervisor_name)}
             {row('Email', workSupervisor?.email)}
