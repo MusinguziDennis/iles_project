@@ -5,6 +5,7 @@ from rest_framework import serializers, status
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import User
+from .email_utils import send_credentials_email
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,7 +48,10 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
+            plain_password = request.data.get('password')
             user = serializer.save()
+            # Send credentials email
+            send_credentials_email(user, plain_password)
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -100,6 +104,21 @@ class UserListView(APIView):
             return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
         users = User.objects.all().order_by('date_joined')
         return Response(UserSerializer(users, many=True).data)
+
+    def post(self, request):
+        """Admin creates a user and sends credentials via email."""
+        if request.user.role != 'admin':
+            return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            plain_password = request.data.get('password')
+            user = serializer.save()
+            email_sent = send_credentials_email(user, plain_password)
+            return Response({
+                **UserSerializer(user).data,
+                'email_sent': email_sent,
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(APIView):
