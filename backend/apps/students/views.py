@@ -2,13 +2,16 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 
 from .models import InternshipPlacement
+from apps.supervisors.models import Notification
 from .serializers import (
     InternshipPlacementListSerializer,
     InternshipPlacementDetailedSerializer,
     InternshipPlacementCreateUpdateSerializer,
 )
+from apps.supervisors.views import NotificationSerializer
 
 
 class InternshipPlacementViewSet(viewsets.ModelViewSet):
@@ -176,3 +179,35 @@ class StudentPlacementDetailView(generics.RetrieveUpdateDestroyAPIView):
             else:
                 return queryset.filter(academic_supervisor=user)
         return queryset
+
+
+class StudentNotificationListView(generics.ListAPIView):
+    """GET /api/students/notifications/"""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+
+class StudentNotificationMarkReadView(APIView):
+    """PATCH /api/students/notifications/<id>/read/"""
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, user=request.user)
+            notif.is_read = True
+            notif.save()
+            return Response(NotificationSerializer(notif).data)
+        except Notification.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class StudentNotificationMarkAllReadView(APIView):
+    """POST /api/students/notifications/mark-all-read/"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'detail': 'All notifications marked as read.'})
