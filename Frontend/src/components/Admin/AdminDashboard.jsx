@@ -86,8 +86,16 @@ const AdminDashboard = () => {
 
   const handleSaveUser = async (userData) => {
     try {
-      if (editingUser) await updateUser(editingUser.id, userData);
-      else await createUser({ ...userData, confirm_password: userData.password });
+      if (editingUser) {
+        await updateUser(editingUser.id, userData);
+      } else {
+        const res = await createUser({ ...userData, confirm_password: userData.password });
+        if (res.data.email_sent) {
+          alert(`✅ User created! Login credentials sent to ${userData.email}`);
+        } else {
+          alert(`⚠️ User created but email could not be sent. Please share credentials manually.\n\nUsername: ${userData.username}\nPassword: ${userData.password}`);
+        }
+      }
       setShowUserModal(false);
       loadData();
     } catch (e) {
