@@ -1,19 +1,35 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { postReview, updateLogStatus } from '../../services/supervisorApi';
 import StatusBadge from './StatusBadge';
 
-// Valid status transitions a supervisor can trigger
+// Role-based valid transitions
+// work_supervisor: submitted → reviewed, reviewed → submitted (push back)
+// university_supervisor: reviewed → approved, reviewed → submitted (push back)
 const TRANSITIONS = {
-  submitted: [
-    { value: 'reviewed', label: '👁️ Mark as Reviewed' },
-  ],
-  reviewed: [
-    { value: 'approved', label: '✅ Approve Log' },
-    { value: 'submitted', label: '↩️ Push Back to Submitted' },
-  ],
+  work_supervisor: {
+    submitted: [{ value: 'reviewed', label: '👁️ Mark as Reviewed' }],
+    reviewed:  [
+      { value: 'approved', label: '✅ Approve Log' },
+      { value: 'submitted', label: '↩️ Push Back to Submitted' },
+    ],
+  },
+  university_supervisor: {
+    submitted: [{ value: 'reviewed', label: '👁️ Mark as Reviewed' }],
+    reviewed:  [
+      { value: 'approved', label: '✅ Final Approve' },
+      { value: 'submitted', label: '↩️ Request Changes' },
+    ],
+  },
+};
+
+const ROLE_LABEL = {
+  work_supervisor: '🏢 Workplace Supervisor',
+  university_supervisor: '🎓 Academic Supervisor',
 };
 
 const ReviewForm = ({ log, onClose, onUpdated }) => {
+  const { user } = useAuth();
   const [comment, setComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -21,7 +37,8 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
   const [success, setSuccess] = useState('');
 
   const isLocked = log.status === 'approved';
-  const transitions = TRANSITIONS[log.status] || [];
+  const roleTransitions = TRANSITIONS[user?.role] || TRANSITIONS['work_supervisor'];
+  const transitions = roleTransitions[log.status] || [];
 
   const handlePostComment = async () => {
     if (!comment.trim()) { setError('Comment cannot be empty.'); return; }
@@ -69,7 +86,10 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
             <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>
               Week {log.week_number} — {log.student.full_name}
             </h2>
-            <div style={{ marginTop: '8px' }}><StatusBadge status={log.status} /></div>
+            <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <StatusBadge status={log.status} />
+              <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{ROLE_LABEL[user?.role]}</span>
+            </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
         </div>
