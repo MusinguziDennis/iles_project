@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import serializers, status
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils.crypto import get_random_string
 from .models import User
 from .email_utils import send_credentials_email
 
@@ -50,7 +51,6 @@ class RegisterView(APIView):
         if serializer.is_valid():
             plain_password = request.data.get('password')
             user = serializer.save()
-            # Send credentials email
             send_credentials_email(user, plain_password)
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -95,8 +95,34 @@ class ChangePasswordView(APIView):
         return Response({'detail': 'Password changed successfully.'})
 
 
+class AdminResetPasswordView(APIView):
+    """POST /api/users/<id>/reset-password/ — admin resets a user password and emails new one"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if request.user.role != 'admin':
+            return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate a random password
+        new_password = get_random_string(length=10)
+        user.set_password(new_password)
+        user.save()
+
+        # Email the new password
+        email_sent = send_credentials_email(user, new_password)
+        return Response({
+            'detail': f'Password reset successfully. {"Credentials emailed." if email_sent else "Email failed — share manually."}',
+            'email_sent': email_sent,
+            'new_password': new_password if not email_sent else None,
+        })
+
+
 class UserListView(APIView):
-    """GET /api/users/list/ — admin only"""
+    """GET/POST /api/users/list/ — admin only"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -151,3 +177,24 @@ class UserDetailView(APIView):
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ForgotPasswordView(APIView):
+    """POST /api/users/forgot-password/ — sends new password to email"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Don't reveal if email exists
+            return Response({'detail': 'If this email exists, a reset link has been sent.'})
+
+        new_password = get_random_string(length=10)
+        user.set_password(new_password)
+        user.save()
+        send_credentials_email(user, new_password)
+        return Response({'detail': 'New credentials have been sent to your email.'})
