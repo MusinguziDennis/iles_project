@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { resetUserPassword } from '../../services/adminApi';
 
 const ROLE_COLORS = {
   student:               { bg: '#dbeafe', color: '#1e40af' },
@@ -81,6 +82,13 @@ const UserList = ({ users, onAdd, onEdit, onDelete }) => {
                   <td style={td}>{u.is_active ? <span style={{ color: '#16a34a', fontWeight: '600' }}>✅ Active</span> : <span style={{ color: '#dc2626', fontWeight: '600' }}>❌ Inactive</span>}</td>
                   <td style={td}>
                     <button onClick={() => onEdit(u)} style={{ background: '#fef9c3', color: '#854d0e', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>✏️ Edit</button>
+                    <button onClick={async () => {
+                      if (!window.confirm(`Reset password for ${u.username}? A new password will be emailed to them.`)) return;
+                      try {
+                        const res = await resetUserPassword(u.id);
+                        alert(res.data.email_sent ? `✅ Password reset and emailed to ${u.email}` : `⚠️ Password reset. New password: ${res.data.new_password}`);
+                      } catch { alert('Failed to reset password.'); }
+                    }} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>🔑 Reset</button>
                     <button onClick={() => onDelete(u.id)} style={{ background: '#fce7f3', color: '#9d174d', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>🗑️ Delete</button>
                   </td>
                 </tr>
