@@ -2,6 +2,7 @@ from rest_framework import serializers
 from apps.evaluations.models import WeeklyLog, Feedback
 from apps.students.models import InternshipPlacement
 from apps.users.models import User
+from .models import Notification
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -119,3 +120,10 @@ class StatusUpdateSerializer(serializers.Serializer):
                 f"Cannot transition from '{log.status}' to '{new_status}'. Allowed: {allowed}"
             )
         return new_status
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'is_read', 'created_at']
+        read_only_fields = ['id', 'created_at']
