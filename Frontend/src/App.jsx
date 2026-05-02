@@ -8,6 +8,7 @@ import SupervisorDashboard from './components/Supervisor/SupervisorDashboard';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ProfilePage from './Profile/ProfilePage';
 import PrivateRoute from './components/Common/PrivateRoute';
+import ForgotPassword from './components/Auth/ForgotPassword';
 import NotFoundPage from './components/NotFoundPage';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Student only */}
           <Route path="/student/dashboard" element={
