@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchMyPlacement, fetchMyLogs, createLog, updateLog, deleteLog, submitLog } from '../../services/studentApi';
 import WeeklyLogForm from './WeeklyLogForm';
 import PlacementDetails from './PlacementDetails';
+import StudentNotifications from './StudentNotifications';
 
 const NAV = [
   { key: 'overview',   icon: '🏠', label: 'Overview' },
@@ -37,6 +38,8 @@ const StudentDashboard = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -212,6 +215,13 @@ const StudentDashboard = () => {
                 <td style={td}><StatusBadge status={log.status} /></td>
                 <td style={{ ...td, color: '#94a3b8' }}>{log.submitted_at ? new Date(log.submitted_at).toLocaleDateString() : '—'}</td>
                 <td style={td}>
+                  {(log.status === 'draft' || log.status === 'submitted') && log.status !== 'submitted' && (
+                    <>
+                      <button onClick={() => { setEditingLog(log); setShowForm(true); }} style={{ background: '#fef9c3', color: '#854d0e', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>✏️ Edit</button>
+                      <button onClick={() => handleSubmitLog(log.id)} style={{ background: '#dcfce7', color: '#166534', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>📤 Submit</button>
+                      <button onClick={() => handleDeleteLog(log.id)} style={{ background: '#fce7f3', color: '#9d174d', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>🗑️</button>
+                    </>
+                  )}
                   {log.status === 'draft' && (
                     <>
                       <button onClick={() => { setEditingLog(log); setShowForm(true); }} style={{ background: '#fef9c3', color: '#854d0e', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>✏️ Edit</button>
@@ -333,6 +343,10 @@ const StudentDashboard = () => {
             <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
               {NAV.find(n => n.key === activePage)?.icon} {NAV.find(n => n.key === activePage)?.label}
             </span>
+          </div>
+          {showNotifications && <StudentNotifications onClose={() => setShowNotifications(false)} />}
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowNotifications(!showNotifications)} style={{ background: showNotifications ? '#f0f4ff' : '#f8fafc', border: `1px solid ${showNotifications ? '#6366f1' : '#e2e8f0'}`, borderRadius: '10px', padding: '8px 10px', cursor: 'pointer', fontSize: '16px' }}>🔔</button>
           </div>
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#0ea5e9,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '14px' }}>
             {(user?.first_name || user?.username || 'S').charAt(0).toUpperCase()}
