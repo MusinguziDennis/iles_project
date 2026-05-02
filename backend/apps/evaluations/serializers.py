@@ -199,21 +199,29 @@ class WeeklyLogStatusUpdateSerializer(serializers.ModelSerializer):
     Serializer for status updates only (submitted, reviewed, approved).
     Automatically sets timestamps based on status transitions.
     """
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    VALID_TRANSITIONS = {
+        'draft': ['submitted'],
+        'submitted': ['reviewed', 'draft'],
+        'reviewed': ['approved', 'submitted'],
+        'approved': ['reviewed'],  # Allow re-opening
+    }
+
+    def validate_status(self, value):
+        log = self.instance
+        current_status = log.status if log else 'draft'
+        allowed = self.VALID_TRANSITIONS.get(current_status, [])
+        
+        if value not in allowed:
+            raise serializers.ValidationError(
+                f"Cannot transition from '{current_status}' to '{value}'. "
+                f"Allowed: {', '.join(allowed)}"
+            )
+        return value
 
     class Meta:
         model = WeeklyLog
         fields = ['id', 'status', 'status_display', 'submitted_at', 'reviewed_at', 'approved_at']
         read_only_fields = ['id', 'status_display', 'submitted_at', 'reviewed_at', 'approved_at']
-
-    def validate_status(self, value):
-        """Ensure status is valid."""
-        valid_statuses = ['draft', 'submitted', 'reviewed', 'approved']
-        if value not in valid_statuses:
-            raise serializers.ValidationError(
-                f"Invalid status. Choose from: {', '.join(valid_statuses)}"
-            )
-        return value
 
     def update(self, instance, validated_data):
         """
