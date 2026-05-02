@@ -72,12 +72,32 @@ class WeeklyLogViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        """Create log with student context."""
-        serializer.save()
+        """Create log and notify assigned supervisors."""
+        log = serializer.save()
+        # Notify supervisors when a new log is created (draft)
+        return log
 
     def perform_update(self, serializer):
-        """Update log."""
-        serializer.save()
+        """Update log and notify supervisors when submitted."""
+        old_status = self.get_object().status
+        log = serializer.save()
+        # Notify supervisors when student submits a log
+        if old_status == 'draft' and log.status == 'submitted':
+            self._notify_supervisors(log)
+        return log
+
+    def _notify_supervisors(self, log):
+        """Notify both supervisors when a student submits a log."""
+        from apps.supervisors.models import Notification
+        try:
+            placement = log.student.placement
+            msg = f"{log.student.get_full_name()} submitted Week {log.week_number} log for review."
+            if placement.workplace_supervisor:
+                Notification.objects.create(user=placement.workplace_supervisor, message=msg)
+            if placement.academic_supervisor:
+                Notification.objects.create(user=placement.academic_supervisor, message=msg)
+        except Exception:
+            pass  # No placement assigned — skip notification
 
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
