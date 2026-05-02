@@ -2,9 +2,10 @@ import api from './api';
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 export const fetchUsers = () => api.get('/users/list/');
-export const createUser = (data) => api.post('/users/list/', data); // Admin creates user + sends email
+export const createUser = (data) => api.post('/users/list/', data);
 export const updateUser = (id, data) => api.patch(`/users/${id}/`, data);
 export const deleteUser = (id) => api.delete(`/users/${id}/`);
+export const resetUserPassword = (id) => api.post(`/users/${id}/reset-password/`);
 
 // ── Placements ─────────────────────────────────────────────────────────────────
 export const fetchPlacements = () => api.get('/students/placements/');
