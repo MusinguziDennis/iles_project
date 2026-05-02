@@ -2,7 +2,7 @@ import api from './api';
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 export const fetchUsers = () => api.get('/users/list/');
-export const createUser = (data) => api.post('/users/register/', data);
+export const createUser = (data) => api.post('/users/list/', data); // Admin creates user + sends email
 export const updateUser = (id, data) => api.patch(`/users/${id}/`, data);
 export const deleteUser = (id) => api.delete(`/users/${id}/`);
 
