@@ -158,8 +158,12 @@ class InternshipPlacementCreateUpdateSerializer(serializers.ModelSerializer):
 
         return data
 
-    def validate_student(self, value):
-        """Ensure each student has only one active placement."""
+    def validate_student_id(self, value):
+        """Ensure each student has only one active placement.
+        
+        Note: This is a field-level validator for the 'student_id' field.
+        The field uses source='student' to map to the actual model field.
+        """
         # Check if student already has a placement (for create operations)
         if self.instance is None:  # Create operation
             if InternshipPlacement.objects.filter(student=value).exists():

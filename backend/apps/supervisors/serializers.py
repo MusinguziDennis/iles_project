@@ -48,10 +48,12 @@ class WeeklyLogSerializer(serializers.ModelSerializer):
 
 
 class SupervisorStudentSerializer(serializers.ModelSerializer):
-    """Serializes a placement with student info and log summary."""
+    """Serializes a placement with student info, supervisor info, and log summary."""
     student_name = serializers.SerializerMethodField()
     student_email = serializers.SerializerMethodField()
     student_id = serializers.SerializerMethodField()
+    workplace_supervisor_name = serializers.SerializerMethodField()
+    academic_supervisor_name = serializers.SerializerMethodField()
     total_logs = serializers.SerializerMethodField()
     pending_logs = serializers.SerializerMethodField()
     approved_logs = serializers.SerializerMethodField()
@@ -61,6 +63,7 @@ class SupervisorStudentSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'student_id', 'student_name', 'student_email',
             'company_name', 'start_date', 'end_date',
+            'workplace_supervisor_name', 'academic_supervisor_name',
             'total_logs', 'pending_logs', 'approved_logs',
         )
 
@@ -72,6 +75,18 @@ class SupervisorStudentSerializer(serializers.ModelSerializer):
 
     def get_student_id(self, obj):
         return obj.student.id
+
+    def get_workplace_supervisor_name(self, obj):
+        """Get workplace supervisor full name or 'Unassigned' if null."""
+        if obj.workplace_supervisor:
+            return obj.workplace_supervisor.get_full_name() or obj.workplace_supervisor.username
+        return 'Unassigned'
+
+    def get_academic_supervisor_name(self, obj):
+        """Get academic supervisor full name or 'Unassigned' if null."""
+        if obj.academic_supervisor:
+            return obj.academic_supervisor.get_full_name() or obj.academic_supervisor.username
+        return 'Unassigned'
 
     def get_total_logs(self, obj):
         return obj.student.weekly_logs.count()
