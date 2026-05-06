@@ -70,6 +70,13 @@ const AdminDashboard = () => {
     setLoading(true); setError('');
     try {
       const [usersRes, placementsRes] = await Promise.all([fetchUsers(), fetchPlacements()]);
+      
+      // Debug: Log what we received from the API
+      console.log('✅ Users fetched:', usersRes.data.length, 'users');
+      console.log('   Students:', usersRes.data.filter(u => u.role === 'student').length);
+      console.log('   Supervisors:', usersRes.data.filter(u => u.role === 'work_supervisor' || u.role === 'university_supervisor').length);
+      console.log('   Sample user:', usersRes.data[0]);
+      
       setUsers(usersRes.data);
       setPlacements(placementsRes.data.map(p => ({
         ...p,
@@ -77,8 +84,14 @@ const AdminDashboard = () => {
         workplace_supervisor: { name: p.workplace_supervisor_name },
         academic_supervisor: { name: p.academic_supervisor_name },
       })));
-    } catch {
-      setError('Failed to load data. Make sure you are logged in as admin.');
+    } catch (err) {
+      console.error('❌ Error loading data:', err);
+      const errorMsg = err.response?.status === 403 
+        ? 'Admin access denied. Make sure you are logged in as admin.'
+        : err.response?.status === 401
+        ? 'Not authenticated. Please log in again.'
+        : err.response?.data?.detail || 'Failed to load data.';
+      setError(errorMsg);
     } finally { setLoading(false); }
   }, []);
 
