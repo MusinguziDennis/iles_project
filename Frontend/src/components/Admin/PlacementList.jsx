@@ -4,7 +4,7 @@ const PlacementList = ({ placements, onAdd, onEdit, onDelete }) => {
   const [search, setSearch] = useState('');
 
   const filtered = placements.filter(p =>
-    `${p.student?.name} ${p.company_name} ${p.workplace_supervisor?.name} ${p.academic_supervisor?.name}`
+    `${p.student?.name || p.student_name || ''} ${p.company_name} ${p.workplace_supervisor?.name || p.workplace_supervisor_name || ''} ${p.academic_supervisor?.name || p.academic_supervisor_name || ''}`
       .toLowerCase().includes(search.toLowerCase())
   );
 

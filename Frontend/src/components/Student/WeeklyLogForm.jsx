@@ -16,7 +16,7 @@ const WeeklyLogForm = ({ log, onClose, onSuccess }) => {
   const validate = () => {
     const errs = {};
     if (!formData.week_number) errs.week_number = 'Week number is required.';
-    if (formData.week_number < 1 || formData.week_number > 52) errs.week_number = 'Week number must be between 1 and 52.';
+    else if (formData.week_number < 1 || formData.week_number > 52) errs.week_number = 'Week number must be between 1 and 52.';
     if (!formData.content.trim()) errs.content = 'Content is required.';
     if (formData.content.trim().length < 20) errs.content = 'Content must be at least 20 characters.';
     setErrors(errs);

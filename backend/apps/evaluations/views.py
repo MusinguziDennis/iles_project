@@ -69,14 +69,13 @@ class WeeklyLogViewSet(viewsets.ModelViewSet):
         if user.role == 'student':
             queryset = queryset.filter(student=user)
         elif user.role in ['work_supervisor', 'university_supervisor']:
-            # Get student IDs assigned to this supervisor
             if user.role == 'work_supervisor':
                 student_ids = user.workplace_placements.values_list('student_id', flat=True)
             else:
                 student_ids = user.academic_placements.values_list('student_id', flat=True)
             queryset = queryset.filter(student_id__in=student_ids)
 
-        return queryset
+        return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
         """Create log and notify assigned supervisors."""
@@ -85,13 +84,24 @@ class WeeklyLogViewSet(viewsets.ModelViewSet):
         return log
 
     def perform_update(self, serializer):
-        """Update log and notify supervisors when submitted."""
-        old_status = self.get_object().status
+        """Update log and notify supervisors when submitted. Block updates to approved logs."""
+        log = self.get_object()
+        if log.status == 'approved':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Cannot edit an approved log. It is locked.')
+        old_status = log.status
         log = serializer.save()
         # Notify supervisors when student submits a log
         if old_status == 'draft' and log.status == 'submitted':
             self._notify_supervisors(log)
         return log
+
+    def perform_destroy(self, instance):
+        """Block deletion of approved logs."""
+        if instance.status == 'approved':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Cannot delete an approved log. It is locked.')
+        instance.delete()
 
     def _notify_supervisors(self, log):
         """Notify both supervisors when a student submits a log."""

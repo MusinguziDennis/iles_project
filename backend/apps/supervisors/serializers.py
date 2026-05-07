@@ -109,6 +109,9 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Cannot review a log that has not been submitted yet.')
         if log.status == 'approved':
             raise serializers.ValidationError('This log is already approved and locked.')
+        comment = attrs.get('comment', '')
+        if not comment or not comment.strip():
+            raise serializers.ValidationError('Feedback comment cannot be empty.')
         return attrs
 
     def create(self, validated_data):
@@ -121,15 +124,23 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
 class StatusUpdateSerializer(serializers.Serializer):
     VALID_TRANSITIONS = {
-        'submitted': ['reviewed'],
-        'reviewed': ['approved', 'submitted'],
+        'work_supervisor': {
+            'submitted': ['reviewed'],
+            'reviewed': ['submitted'],
+        },
+        'university_supervisor': {
+            'submitted': ['reviewed'],
+            'reviewed': ['approved', 'submitted'],
+        },
     }
 
     status = serializers.ChoiceField(choices=['reviewed', 'approved', 'submitted'])
 
     def validate_status(self, new_status):
         log = self.context['log']
-        allowed = self.VALID_TRANSITIONS.get(log.status, [])
+        user = self.context['request'].user
+        role_transitions = self.VALID_TRANSITIONS.get(user.role, {})
+        allowed = role_transitions.get(log.status, [])
         if new_status not in allowed:
             raise serializers.ValidationError(
                 f"Cannot transition from '{log.status}' to '{new_status}'. Allowed: {allowed}"

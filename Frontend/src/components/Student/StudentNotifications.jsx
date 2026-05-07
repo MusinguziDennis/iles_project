@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMyNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/studentApi';
 
-const StudentNotifications = ({ onClose }) => {
+const StudentNotifications = ({ onClose, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,14 +15,18 @@ const StudentNotifications = ({ onClose }) => {
   const markRead = async (id) => {
     try {
       await markNotificationRead(id);
-      setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+      const updated = notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
+      setNotifications(updated);
+      if (onUnreadChange) onUnreadChange(updated.filter(n => !n.is_read).length);
     } catch {}
   };
 
   const markAll = async () => {
     try {
       await markAllNotificationsRead();
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      const updated = notifications.map(n => ({ ...n, is_read: true }));
+      setNotifications(updated);
+      if (onUnreadChange) onUnreadChange(0);
     } catch {}
   };
 

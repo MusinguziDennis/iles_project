@@ -15,6 +15,7 @@ from .serializers import (
     ReviewCreateSerializer,
     StatusUpdateSerializer,
     SupervisorStudentSerializer,
+    FeedbackSerializer,
 )
 
 
@@ -89,8 +90,8 @@ class SupervisorLogListView(generics.ListAPIView):
     def get_queryset(self):
         return WeeklyLog.objects.filter(
             student_id__in=_get_student_ids(self.request.user),
-            status__in=['submitted', 'reviewed'],
-        ).select_related('student').prefetch_related('feedback')
+            status__in=['submitted', 'reviewed', 'approved'],
+        ).select_related('student').prefetch_related('feedback').order_by('-updated_at')
 
 
 class SupervisorLogDetailView(generics.RetrieveAPIView):
@@ -116,7 +117,6 @@ class SupervisorReviewCreateView(APIView):
         if serializer.is_valid():
             feedback = serializer.save()
             _notify_student(log.student, f"{request.user.get_full_name()} left feedback on your Week {log.week_number} log.")
-            from .serializers import FeedbackSerializer
             return Response(FeedbackSerializer(feedback).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,7 +131,7 @@ class SupervisorStatusUpdateView(APIView):
         except WeeklyLog.DoesNotExist:
             return Response({'detail': 'Log not found or not assigned to you.'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = StatusUpdateSerializer(data=request.data, context={'log': log})
+        serializer = StatusUpdateSerializer(data=request.data, context={'log': log, 'request': request})
         if serializer.is_valid():
             new_status = serializer.validated_data['status']
             log.status = new_status
@@ -150,13 +150,14 @@ class SupervisorStatsView(APIView):
     permission_classes = [IsSupervisor]
 
     def get(self, request):
-        student_ids = _get_student_ids(request.user)
+        student_ids = list(_get_student_ids(request.user))
         logs = WeeklyLog.objects.filter(student_id__in=student_ids)
         return Response({
-            'total_students': len(set(student_ids)),
+            'total_students': len(student_ids),
             'pending_review': logs.filter(status='submitted').count(),
             'reviewed': logs.filter(status='reviewed').count(),
             'approved': logs.filter(status='approved').count(),
+            'total_logs': logs.count(),
         })
 
 

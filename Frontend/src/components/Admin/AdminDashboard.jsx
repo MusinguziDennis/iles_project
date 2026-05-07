@@ -80,7 +80,7 @@ const AdminDashboard = () => {
       setUsers(usersRes.data);
       setPlacements(placementsRes.data.map(p => ({
         ...p,
-        student: { id: p.id, name: p.student_name },
+        student: { id: p.student, name: p.student_name },
         workplace_supervisor: { name: p.workplace_supervisor_name },
         academic_supervisor: { name: p.academic_supervisor_name },
       })));
@@ -110,6 +110,7 @@ const AdminDashboard = () => {
         }
       }
       setShowUserModal(false);
+      setEditingUser(null);
       loadData();
     } catch (e) {
       alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save user.');
@@ -117,9 +118,9 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Delete this user?')) return;
+    if (!window.confirm('Delete this user? This will also remove all their associated data.')) return;
     try { await deleteUser(userId); loadData(); }
-    catch { alert('Failed to delete user.'); }
+    catch (e) { alert(e.response?.data?.detail || 'Failed to delete user.'); }
   };
 
   const handleSavePlacement = async (placementData) => {
@@ -127,6 +128,7 @@ const AdminDashboard = () => {
       if (editingPlacement) await updatePlacement(editingPlacement.id, placementData);
       else await createPlacement(placementData);
       setShowPlacementModal(false);
+      setEditingPlacement(null);
       loadData();
     } catch (e) {
       alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save placement.');
@@ -134,9 +136,9 @@ const AdminDashboard = () => {
   };
 
   const handleDeletePlacement = async (placementId) => {
-    if (!window.confirm('Delete this placement?')) return;
+    if (!window.confirm('Delete this placement? The student will lose their assigned supervisors.')) return;
     try { await deletePlacement(placementId); loadData(); }
-    catch { alert('Failed to delete placement.'); }
+    catch (e) { alert(e.response?.data?.detail || 'Failed to delete placement.'); }
   };
 
   const navigate = (page) => {

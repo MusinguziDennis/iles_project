@@ -53,9 +53,9 @@ class FeedbackSerializer(serializers.ModelSerializer):
         """Ensure feedback comment is not empty."""
         if not value or not value.strip():
             raise serializers.ValidationError("Feedback comment cannot be empty.")
-        if len(value.strip()) < 10:
-            raise serializers.ValidationError("Feedback comment must be at least 10 characters.")
-        return value
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Feedback comment must be at least 5 characters.")
+        return value.strip()
 
 
 class FeedbackListSerializer(serializers.ModelSerializer):
@@ -173,7 +173,7 @@ class WeeklyLogCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Log content cannot be empty.")
         if len(value.strip()) < 20:
             raise serializers.ValidationError("Log content must be at least 20 characters.")
-        return value
+        return value.strip()
 
     def validate(self, data):
         """
@@ -222,6 +222,17 @@ class WeeklyLogStatusUpdateSerializer(serializers.ModelSerializer):
         model = WeeklyLog
         fields = ['id', 'status', 'status_display', 'submitted_at', 'reviewed_at', 'approved_at']
         read_only_fields = ['id', 'status_display', 'submitted_at', 'reviewed_at', 'approved_at']
+
+    def validate_status(self, value):
+        """Ensure status is valid and approved logs cannot be re-submitted."""
+        valid_statuses = ['draft', 'submitted', 'reviewed', 'approved']
+        if value not in valid_statuses:
+            raise serializers.ValidationError(
+                f"Invalid status. Choose from: {', '.join(valid_statuses)}"
+            )
+        if self.instance and self.instance.status == 'approved':
+            raise serializers.ValidationError('Cannot change status of an approved log.')
+        return value
 
     def update(self, instance, validated_data):
         """
