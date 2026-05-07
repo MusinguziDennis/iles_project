@@ -39,6 +39,11 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
   const roleTransitions = TRANSITIONS[user?.role] || TRANSITIONS['work_supervisor'];
   const transitions = roleTransitions[log.status] || [];
 
+  const handleSuccess = () => {
+    setSuccess('');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
   const handlePostComment = async () => {
     if (!comment.trim()) { setError('Comment cannot be empty.'); return; }
     if (comment.trim().length < 5) { setError('Comment must be at least 5 characters.'); return; }
@@ -47,6 +52,7 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
       await postReview(log.id, comment);
       setComment('');
       setSuccess('Comment posted successfully.');
+      setTimeout(() => setSuccess(''), 3000);
       onUpdated();
     } catch (e) {
       setError(e.response?.data?.detail || e.response?.data?.comment?.[0] || 'Failed to post comment.');
@@ -60,6 +66,7 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
     try {
       await updateLogStatus(log.id, newStatus);
       setSuccess(`Status updated to "${newStatus}".`);
+      setTimeout(() => setSuccess(''), 3000);
       onUpdated();
     } catch (e) {
       setError(e.response?.data?.status?.[0] || e.response?.data?.detail || 'Failed to update status.');
