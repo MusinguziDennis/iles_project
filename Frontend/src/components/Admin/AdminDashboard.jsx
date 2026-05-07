@@ -114,6 +114,7 @@ const AdminDashboard = () => {
       if (editingPlacement) await updatePlacement(editingPlacement.id, placementData);
       else await createPlacement(placementData);
       setShowPlacementModal(false);
+      setEditingPlacement(null);
       loadData();
     } catch (e) {
       alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save placement.');
