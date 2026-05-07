@@ -13,6 +13,8 @@ from .serializers import (
     FeedbackListSerializer,
 )
 from .permissions import IsAuthorizedSupervisor
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 class WeeklyLogViewSet(viewsets.ModelViewSet):
     """
@@ -32,6 +34,11 @@ class WeeklyLogViewSet(viewsets.ModelViewSet):
     - GET /api/evaluations/logs/pending-review/ — Get logs pending review
     """
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status', 'student', 'week_number']
+    search_fields = ['student__first_name', 'student__last_name', 'student__username']
+    ordering_fields = ['week_number', 'submitted_at', 'approved_at', 'created_at']
+    ordering = ['-created_at']
     
     def get_serializer_class(self):
         """

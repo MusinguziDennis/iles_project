@@ -3,6 +3,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import serializers
+from rest_framework.permissions import IsAuthenticated
 
 from apps.evaluations.models import WeeklyLog
 from apps.students.models import InternshipPlacement
@@ -158,3 +159,6 @@ class SupervisorStatsView(APIView):
             'approved': logs.filter(status='approved').count(),
             'total_logs': logs.count(),
         })
+
+
+
