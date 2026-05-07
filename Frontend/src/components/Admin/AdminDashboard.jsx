@@ -121,9 +121,9 @@ const AdminDashboard = () => {
   };
 
   const handleDeletePlacement = async (placementId) => {
-    if (!window.confirm('Delete this placement?')) return;
+    if (!window.confirm('Delete this placement? The student will lose their assigned supervisors.')) return;
     try { await deletePlacement(placementId); loadData(); }
-    catch { alert('Failed to delete placement.'); }
+    catch (e) { alert(e.response?.data?.detail || 'Failed to delete placement.'); }
   };
 
   const navigate = (page) => {
