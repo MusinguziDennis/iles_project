@@ -173,7 +173,7 @@ class WeeklyLogCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Log content cannot be empty.")
         if len(value.strip()) < 20:
             raise serializers.ValidationError("Log content must be at least 20 characters.")
-        return value
+        return value.strip()
 
     def validate(self, data):
         """
