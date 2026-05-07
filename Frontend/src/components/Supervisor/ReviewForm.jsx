@@ -10,7 +10,6 @@ const TRANSITIONS = {
   work_supervisor: {
     submitted: [{ value: 'reviewed', label: '👁️ Mark as Reviewed' }],
     reviewed:  [
-      { value: 'approved', label: '✅ Approve Log' },
       { value: 'submitted', label: '↩️ Push Back to Submitted' },
     ],
   },
