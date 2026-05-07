@@ -150,12 +150,6 @@ class InternshipPlacementCreateUpdateSerializer(serializers.ModelSerializer):
                     "End date must be after start date."
                 )
 
-        # Check if trying to create a past internship
-        if start_date and start_date < timezone.now().date():
-            raise serializers.ValidationError(
-                "Start date cannot be in the past."
-            )
-
         return data
 
     def validate_student(self, value):
