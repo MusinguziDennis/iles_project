@@ -2,6 +2,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsAdminOrReadOnly
 from rest_framework.views import APIView
 
 from .models import InternshipPlacement
@@ -32,7 +33,7 @@ class InternshipPlacementViewSet(viewsets.ModelViewSet):
     queryset = InternshipPlacement.objects.select_related(
         'student', 'workplace_supervisor', 'academic_supervisor'
     )
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
     
     def get_serializer_class(self):
         """
@@ -120,7 +121,7 @@ class StudentPlacementListCreateView(generics.ListCreateAPIView):
     GET /api/students/placements/list/ — List placements (using ListSerializer)
     POST /api/students/placements/list/ — Create a placement
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
     serializer_class = InternshipPlacementListSerializer
 
     def get_queryset(self):
@@ -156,7 +157,7 @@ class StudentPlacementDetailView(generics.RetrieveUpdateDestroyAPIView):
     PATCH /api/students/placements/{id}/detail/ — Partial update
     DELETE /api/students/placements/{id}/detail/ — Delete placement
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'id'
 
     def get_serializer_class(self):
