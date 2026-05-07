@@ -5,7 +5,7 @@ const LogList = ({ logs, onSelectLog }) => {
   const [search, setSearch] = useState('');
 
   const filtered = logs.filter(log =>
-    log.student.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    (log.student?.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
     `week ${log.week_number}`.includes(search.toLowerCase())
   );
 
