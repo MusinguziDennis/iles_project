@@ -93,6 +93,9 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Cannot review a log that has not been submitted yet.')
         if log.status == 'approved':
             raise serializers.ValidationError('This log is already approved and locked.')
+        comment = attrs.get('comment', '')
+        if not comment or not comment.strip():
+            raise serializers.ValidationError('Feedback comment cannot be empty.')
         return attrs
 
     def create(self, validated_data):
