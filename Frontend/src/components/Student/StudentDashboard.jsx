@@ -109,6 +109,7 @@ const StudentDashboard = () => {
     submitted: logs.filter(l => l.status === 'submitted').length,
     reviewed: logs.filter(l => l.status === 'reviewed').length,
     approved: logs.filter(l => l.status === 'approved').length,
+    completion: logs.length > 0 ? Math.round((logs.filter(l => l.status === 'approved').length / logs.length) * 100) : 0,
   };
 
   // ── Sidebar ──────────────────────────────────────────────────────────────
