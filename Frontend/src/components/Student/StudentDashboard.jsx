@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchMyPlacement, fetchMyLogs, createLog, updateLog, deleteLog, submitLog } from '../../services/studentApi';
+import { fetchMyPlacement, fetchMyLogs, createLog, updateLog, deleteLog, submitLog, fetchMyNotifications } from '../../services/studentApi';
 import WeeklyLogForm from './WeeklyLogForm';
 import PlacementDetails from './PlacementDetails';
 import StudentNotifications from './StudentNotifications';
@@ -56,12 +56,14 @@ const StudentDashboard = () => {
   const loadData = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [placementRes, logsRes] = await Promise.all([
+      const [placementRes, logsRes, notifRes] = await Promise.all([
         fetchMyPlacement().catch(() => ({ data: [] })),
         fetchMyLogs().catch(() => ({ data: [] })),
+        fetchMyNotifications().catch(() => ({ data: [] })),
       ]);
       setPlacement(placementRes.data.length > 0 ? placementRes.data[0] : null);
       setLogs(logsRes.data);
+      setUnreadCount(notifRes.data.filter(n => !n.is_read).length);
     } catch {
       setError('Failed to load dashboard.');
     } finally { setLoading(false); }
@@ -215,13 +217,6 @@ const StudentDashboard = () => {
                 <td style={td}><StatusBadge status={log.status} /></td>
                 <td style={{ ...td, color: '#94a3b8' }}>{log.submitted_at ? new Date(log.submitted_at).toLocaleDateString() : '—'}</td>
                 <td style={td}>
-                  {(log.status === 'draft' || log.status === 'submitted') && log.status !== 'submitted' && (
-                    <>
-                      <button onClick={() => { setEditingLog(log); setShowForm(true); }} style={{ background: '#fef9c3', color: '#854d0e', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>✏️ Edit</button>
-                      <button onClick={() => handleSubmitLog(log.id)} style={{ background: '#dcfce7', color: '#166534', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>📤 Submit</button>
-                      <button onClick={() => handleDeleteLog(log.id)} style={{ background: '#fce7f3', color: '#9d174d', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>🗑️</button>
-                    </>
-                  )}
                   {log.status === 'draft' && (
                     <>
                       <button onClick={() => { setEditingLog(log); setShowForm(true); }} style={{ background: '#fef9c3', color: '#854d0e', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginRight: '6px' }}>✏️ Edit</button>
@@ -344,9 +339,12 @@ const StudentDashboard = () => {
               {NAV.find(n => n.key === activePage)?.icon} {NAV.find(n => n.key === activePage)?.label}
             </span>
           </div>
-          {showNotifications && <StudentNotifications onClose={() => setShowNotifications(false)} />}
+          {showNotifications && <StudentNotifications onClose={() => setShowNotifications(false)} onUnreadChange={setUnreadCount} />}
           <div style={{ position: 'relative' }}>
             <button onClick={() => setShowNotifications(!showNotifications)} style={{ background: showNotifications ? '#f0f4ff' : '#f8fafc', border: `1px solid ${showNotifications ? '#6366f1' : '#e2e8f0'}`, borderRadius: '10px', padding: '8px 10px', cursor: 'pointer', fontSize: '16px' }}>🔔</button>
+            {unreadCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
+            )}
           </div>
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#0ea5e9,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '14px' }}>
             {(user?.first_name || user?.username || 'S').charAt(0).toUpperCase()}
