@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import { fetchSupervisorNotifications, markSupervisorNotificationRead, markAllSupervisorNotificationsRead } from '../../services/supervisorApi';
 
-const NotificationsPanel = ({ onClose }) => {
+const NotificationsPanel = ({ onClose, onUnreadChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/supervisor/notifications/')
+    fetchSupervisorNotifications()
       .then(res => setNotifications(res.data))
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
@@ -14,15 +14,19 @@ const NotificationsPanel = ({ onClose }) => {
 
   const markRead = async (id) => {
     try {
-      await api.patch(`/supervisor/notifications/${id}/read/`);
-      setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+      await markSupervisorNotificationRead(id);
+      const updated = notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
+      setNotifications(updated);
+      if (onUnreadChange) onUnreadChange(updated.filter(n => !n.is_read).length);
     } catch {}
   };
 
   const markAllRead = async () => {
     try {
-      await api.post('/supervisor/notifications/mark-all-read/');
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      await markAllSupervisorNotificationsRead();
+      const updated = notifications.map(n => ({ ...n, is_read: true }));
+      setNotifications(updated);
+      if (onUnreadChange) onUnreadChange(0);
     } catch {}
   };
 
