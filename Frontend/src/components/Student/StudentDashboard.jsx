@@ -93,7 +93,7 @@ const StudentDashboard = () => {
   };
 
   const handleSubmitLog = async (logId) => {
-    if (!window.confirm('Submit this log for review? You cannot edit it afterwards.')) return;
+    if (!window.confirm('Submit this log for review? You will not be able to edit it afterwards unless your supervisor requests changes.')) return;
     try { await submitLog(logId); loadData(); }
     catch (e) { alert(e.response?.data?.detail || 'Failed to submit log.'); }
   };
