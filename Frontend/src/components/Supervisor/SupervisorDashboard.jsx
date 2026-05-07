@@ -92,7 +92,12 @@ const SupervisorDashboard = () => {
 
   const handleReviewUpdated = async () => {
     if (selectedLog) {
-      try { const r = await fetchLogDetail(selectedLog.id); setSelectedLog(r.data); } catch {}
+      try {
+        const r = await fetchLogDetail(selectedLog.id);
+        setSelectedLog(r.data);
+      } catch {
+        setSelectedLog(null);
+      }
     }
     loadData();
   };
