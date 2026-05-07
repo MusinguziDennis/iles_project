@@ -53,9 +53,9 @@ class FeedbackSerializer(serializers.ModelSerializer):
         """Ensure feedback comment is not empty."""
         if not value or not value.strip():
             raise serializers.ValidationError("Feedback comment cannot be empty.")
-        if len(value.strip()) < 10:
-            raise serializers.ValidationError("Feedback comment must be at least 10 characters.")
-        return value
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Feedback comment must be at least 5 characters.")
+        return value.strip()
 
 
 class FeedbackListSerializer(serializers.ModelSerializer):
