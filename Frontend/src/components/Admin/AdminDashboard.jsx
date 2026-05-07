@@ -73,7 +73,7 @@ const AdminDashboard = () => {
       setUsers(usersRes.data);
       setPlacements(placementsRes.data.map(p => ({
         ...p,
-        student: { id: p.id, name: p.student_name },
+        student: { id: p.student, name: p.student_name },
         workplace_supervisor: { name: p.workplace_supervisor_name },
         academic_supervisor: { name: p.academic_supervisor_name },
       })));
