@@ -90,7 +90,7 @@ class SupervisorLogListView(generics.ListAPIView):
         return WeeklyLog.objects.filter(
             student_id__in=_get_student_ids(self.request.user),
             status__in=['submitted', 'reviewed', 'approved'],
-        ).select_related('student').prefetch_related('feedback')
+        ).select_related('student').prefetch_related('feedback').order_by('-updated_at')
 
 
 class SupervisorLogDetailView(generics.RetrieveAPIView):
