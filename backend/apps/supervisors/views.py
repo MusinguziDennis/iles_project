@@ -149,11 +149,12 @@ class SupervisorStatsView(APIView):
     permission_classes = [IsSupervisor]
 
     def get(self, request):
-        student_ids = _get_student_ids(request.user)
+        student_ids = list(_get_student_ids(request.user))
         logs = WeeklyLog.objects.filter(student_id__in=student_ids)
         return Response({
-            'total_students': len(list(student_ids)),
+            'total_students': len(student_ids),
             'pending_review': logs.filter(status='submitted').count(),
             'reviewed': logs.filter(status='reviewed').count(),
             'approved': logs.filter(status='approved').count(),
+            'total_logs': logs.count(),
         })
