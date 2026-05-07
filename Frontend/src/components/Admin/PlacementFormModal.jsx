@@ -49,9 +49,9 @@ const PlacementFormModal = ({ placement, students, supervisors, onClose, onSave 
     if (!validate()) return;
     setLoading(true);
     try {
-      onSave(formData);
+      await onSave(formData);
     } catch (err) {
-      setErrors({ form: 'Failed to save placement.' });
+      setErrors({ form: err.response?.data ? JSON.stringify(err.response.data) : 'Failed to save placement.' });
     } finally {
       setLoading(false);
     }
