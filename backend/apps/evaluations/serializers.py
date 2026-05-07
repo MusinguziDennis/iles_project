@@ -207,12 +207,14 @@ class WeeklyLogStatusUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'status_display', 'submitted_at', 'reviewed_at', 'approved_at']
 
     def validate_status(self, value):
-        """Ensure status is valid."""
+        """Ensure status is valid and approved logs cannot be re-submitted."""
         valid_statuses = ['draft', 'submitted', 'reviewed', 'approved']
         if value not in valid_statuses:
             raise serializers.ValidationError(
                 f"Invalid status. Choose from: {', '.join(valid_statuses)}"
             )
+        if self.instance and self.instance.status == 'approved':
+            raise serializers.ValidationError('Cannot change status of an approved log.')
         return value
 
     def update(self, instance, validated_data):
