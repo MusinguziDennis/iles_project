@@ -170,7 +170,7 @@ class StudentPlacementDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         queryset = InternshipPlacement.objects.select_related(
             'student', 'workplace_supervisor', 'academic_supervisor'
-        )
+        ).order_by('-created_at')
         if user.role == 'student':
             return queryset.filter(student=user)
         elif user.role in ['work_supervisor', 'university_supervisor']:
