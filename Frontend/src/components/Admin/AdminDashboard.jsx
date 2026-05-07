@@ -104,9 +104,9 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Delete this user?')) return;
+    if (!window.confirm('Delete this user? This will also remove all their associated data.')) return;
     try { await deleteUser(userId); loadData(); }
-    catch { alert('Failed to delete user.'); }
+    catch (e) { alert(e.response?.data?.detail || 'Failed to delete user.'); }
   };
 
   const handleSavePlacement = async (placementData) => {
