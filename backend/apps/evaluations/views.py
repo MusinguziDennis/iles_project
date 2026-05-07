@@ -62,14 +62,13 @@ class WeeklyLogViewSet(viewsets.ModelViewSet):
         if user.role == 'student':
             queryset = queryset.filter(student=user)
         elif user.role in ['work_supervisor', 'university_supervisor']:
-            # Get student IDs assigned to this supervisor
             if user.role == 'work_supervisor':
                 student_ids = user.workplace_placements.values_list('student_id', flat=True)
             else:
                 student_ids = user.academic_placements.values_list('student_id', flat=True)
             queryset = queryset.filter(student_id__in=student_ids)
 
-        return queryset
+        return queryset.order_by('-updated_at')
 
     def perform_create(self, serializer):
         """Create log and notify assigned supervisors."""
