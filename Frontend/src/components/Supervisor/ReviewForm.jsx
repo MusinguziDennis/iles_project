@@ -41,6 +41,7 @@ const ReviewForm = ({ log, onClose, onUpdated }) => {
 
   const handlePostComment = async () => {
     if (!comment.trim()) { setError('Comment cannot be empty.'); return; }
+    if (comment.trim().length < 5) { setError('Comment must be at least 5 characters.'); return; }
     setError(''); setSubmittingComment(true);
     try {
       await postReview(log.id, comment);
