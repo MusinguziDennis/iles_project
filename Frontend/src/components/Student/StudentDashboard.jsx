@@ -87,9 +87,9 @@ const StudentDashboard = () => {
   };
 
   const handleDeleteLog = async (logId) => {
-    if (!window.confirm('Delete this log?')) return;
+    if (!window.confirm('Delete this log? This action cannot be undone.')) return;
     try { await deleteLog(logId); loadData(); }
-    catch { alert('Failed to delete log.'); }
+    catch (e) { alert(e.response?.data?.detail || 'Failed to delete log.'); }
   };
 
   const handleSubmitLog = async (logId) => {
