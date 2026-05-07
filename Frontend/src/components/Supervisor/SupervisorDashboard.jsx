@@ -330,7 +330,7 @@ const SupervisorDashboard = () => {
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}>
           {/* Hamburger */}
-          {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} />}
+          {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} onUnreadChange={(count) => { if (count === 0) setShowNotifications(false); }} />}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: '6px',
             borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '5px',
