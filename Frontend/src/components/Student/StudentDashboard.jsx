@@ -80,7 +80,7 @@ const StudentDashboard = () => {
       }
       setShowForm(false);
       setEditingLog(null);
-      loadData();
+      await loadData();
     } catch (e) {
       alert(e.response?.data ? JSON.stringify(e.response.data) : 'Failed to save log.');
     }
