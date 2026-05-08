@@ -63,10 +63,4 @@ Represents system notifications for users.
 - `created_at`
 
 ## Relationships
-- A **User** can be a Student, Workplace Supervisor, Academic Supervisor, or Administrator.
-- A **Student** has exactly one **InternshipPlacement**.
-- A **Workplace Supervisor** can have many **InternshipPlacements** (students under their supervision).
-- An **Academic Supervisor** can have many **InternshipPlacements**.
-- A **Student** can have many **WeeklyLogs**.
-- A **WeeklyLog** can have many **Feedback** entries.
-- A **User** can have many **Notifications**.
+- A **User** can 
