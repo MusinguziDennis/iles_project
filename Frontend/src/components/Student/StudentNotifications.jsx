@@ -79,4 +79,4 @@ const StudentNotifications = ({ onClose, onUnreadChange }) => {
   );
 };
 
-export default StudentNotifications;
+export StudentNotifications;
